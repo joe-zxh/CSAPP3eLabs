@@ -344,7 +344,7 @@ Disassembly of section .text:
   400ede:	90                   	nop
   400edf:	90                   	nop
 
-0000000000400ee0 <phase_1>:
+0000000000400ee0 <phase_1>: #知道edi存的是 用户输入   esi存的是 密文，那么结果显而易见
   400ee0:	48 83 ec 08          	sub    $0x8,%rsp
   400ee4:	be 00 24 40 00       	mov    $0x402400,%esi #这个应该是密文的位置
   400ee9:	e8 4a 04 00 00       	callq  401338 <strings_not_equal>
@@ -354,27 +354,28 @@ Disassembly of section .text:
   400ef7:	48 83 c4 08          	add    $0x8,%rsp
   400efb:	c3                   	retq   
 
-0000000000400efc <phase_2>:
+0000000000400efc <phase_2>: # 知道<read_six_numbers>的作用是 拿到用户输入的6个int，并放入 (rsp) (rsp+4) (rsp+8) (rsp+12) (rsp+16) (rsp+20)
+                            # 那么结果 就比较清楚了。下面的代码 相当于 一个 首项为1，q为2 的等比数列。
   400efc:	55                   	push   %rbp
   400efd:	53                   	push   %rbx
   400efe:	48 83 ec 28          	sub    $0x28,%rsp
   400f02:	48 89 e6             	mov    %rsp,%rsi
-  400f05:	e8 52 05 00 00       	callq  40145c <read_six_numbers>
-  400f0a:	83 3c 24 01          	cmpl   $0x1,(%rsp)
+  400f05:	e8 52 05 00 00       	callq  40145c <read_six_numbers> #读出来6个int。分别是 (rsp) (rsp+4) (rsp+8) (rsp+12) (rsp+16) (rsp+20)
+  400f0a:	83 3c 24 01          	cmpl   $0x1,(%rsp) #read_six_numbers的结果出来rsp的值为1，否则爆炸
   400f0e:	74 20                	je     400f30 <phase_2+0x34>
   400f10:	e8 25 05 00 00       	callq  40143a <explode_bomb>
   400f15:	eb 19                	jmp    400f30 <phase_2+0x34>
-  400f17:	8b 43 fc             	mov    -0x4(%rbx),%eax
-  400f1a:	01 c0                	add    %eax,%eax
+  400f17:	8b 43 fc             	mov    -0x4(%rbx),%eax #
+  400f1a:	01 c0                	add    %eax,%eax #eax*=2；相当于 每个后面的数为 前面的2倍的等比数列。第一个数字为1。
   400f1c:	39 03                	cmp    %eax,(%rbx)
   400f1e:	74 05                	je     400f25 <phase_2+0x29>
   400f20:	e8 15 05 00 00       	callq  40143a <explode_bomb>
-  400f25:	48 83 c3 04          	add    $0x4,%rbx
-  400f29:	48 39 eb             	cmp    %rbp,%rbx
+  400f25:	48 83 c3 04          	add    $0x4,%rbx #4个字节，4个字节地遍历 完所有的int
+  400f29:	48 39 eb             	cmp    %rbp,%rbx #如果相等，那么6个int遍历完成，否则继续遍历
   400f2c:	75 e9                	jne    400f17 <phase_2+0x1b>
   400f2e:	eb 0c                	jmp    400f3c <phase_2+0x40>
-  400f30:	48 8d 5c 24 04       	lea    0x4(%rsp),%rbx
-  400f35:	48 8d 6c 24 18       	lea    0x18(%rsp),%rbp
+  400f30:	48 8d 5c 24 04       	lea    0x4(%rsp),%rbx 
+  400f35:	48 8d 6c 24 18       	lea    0x18(%rsp),%rbp #24 rbp用来记录 6个int的结束的位置
   400f3a:	eb db                	jmp    400f17 <phase_2+0x1b>
   400f3c:	48 83 c4 28          	add    $0x28,%rsp
   400f40:	5b                   	pop    %rbx
@@ -802,21 +803,23 @@ Disassembly of section .text:
   401452:	bf 08 00 00 00       	mov    $0x8,%edi
   401457:	e8 c4 f7 ff ff       	callq  400c20 <exit@plt>
 
-000000000040145c <read_six_numbers>:
-  40145c:	48 83 ec 18          	sub    $0x18,%rsp
-  401460:	48 89 f2             	mov    %rsi,%rdx
-  401463:	48 8d 4e 04          	lea    0x4(%rsi),%rcx
-  401467:	48 8d 46 14          	lea    0x14(%rsi),%rax
-  40146b:	48 89 44 24 08       	mov    %rax,0x8(%rsp)
-  401470:	48 8d 46 10          	lea    0x10(%rsi),%rax
-  401474:	48 89 04 24          	mov    %rax,(%rsp)
-  401478:	4c 8d 4e 0c          	lea    0xc(%rsi),%r9
-  40147c:	4c 8d 46 08          	lea    0x8(%rsi),%r8
+000000000040145c <read_six_numbers>:   
+#作用应该是提取密文中的6个数字。rsi应该是 密文内容的位置。 rdi应该是 用户输入内容的 位置。
+#每个数字是4个字节(int)
+  40145c:	48 83 ec 18          	sub    $0x18,%rsp #rsp往下走24个字节。
+  401460:	48 89 f2             	mov    %rsi,%rdx #把密文所在的位置备份到rdx中。应该是第1个数字的位置，通过(%rdx)来引用。到时 回到上一层的函数时可以用。
+  401463:	48 8d 4e 04          	lea    0x4(%rsi),%rcx #第2个数字 放在密文的 第4个字节。存到rcx中
+  401467:	48 8d 46 14          	lea    0x14(%rsi),%rax #第3个数字 放在密文的 第20个字节。存到rax中
+  40146b:	48 89 44 24 08       	mov    %rax,0x8(%rsp) #第3个数字 放到rsp+8的位置上。估计是寄存器不够用了，存到栈里面。
+  401470:	48 8d 46 10          	lea    0x10(%rsi),%rax #同理，第4个数字 放在密文的 第16个字节。
+  401474:	48 89 04 24          	mov    %rax,(%rsp) #第4个数字 存到栈的rsp上。
+  401478:	4c 8d 4e 0c          	lea    0xc(%rsi),%r9 #第5个数字 放在密文的 第12个字节上。存到r9中。
+  40147c:	4c 8d 46 08          	lea    0x8(%rsi),%r8 #第6个数字 放在密文的 第8个字节上。存到r8中。
   401480:	be c3 25 40 00       	mov    $0x4025c3,%esi
   401485:	b8 00 00 00 00       	mov    $0x0,%eax
-  40148a:	e8 61 f7 ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
-  40148f:	83 f8 05             	cmp    $0x5,%eax
-  401492:	7f 05                	jg     401499 <read_six_numbers+0x3d>
+  40148a:	e8 61 f7 ff ff       	callq  400bf0 <__isoc99_sscanf@plt> #sscanf出来的应该就是用户输入的第一个字符
+  40148f:	83 f8 05             	cmp    $0x5,%eax #
+  401492:	7f 05                	jg     401499 <read_six_numbers+0x3d> #eax要>5，否则爆炸
   401494:	e8 a1 ff ff ff       	callq  40143a <explode_bomb>
   401499:	48 83 c4 18          	add    $0x18,%rsp
   40149d:	c3                   	retq   

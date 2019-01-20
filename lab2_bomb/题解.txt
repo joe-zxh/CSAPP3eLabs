@@ -1,1 +1,6 @@
-phase1(52字节): Border relations with Canada have never been better.
+phase1(52字节): 
+Border relations with Canada have never been better.
+
+phase2:
+1 2 4 8 16 32
+
