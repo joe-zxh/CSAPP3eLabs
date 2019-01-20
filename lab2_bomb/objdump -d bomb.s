@@ -383,19 +383,23 @@ Disassembly of section .text:
   400f42:	c3                   	retq   
 
 0000000000400f43 <phase_3>:
-  400f43:	48 83 ec 18          	sub    $0x18,%rsp
-  400f47:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
-  400f4c:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
-  400f51:	be cf 25 40 00       	mov    $0x4025cf,%esi
+  400f43:	48 83 ec 18          	sub    $0x18,%rsp #24
+  400f47:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx #12 #rcx是 sscanf的第4个参数，会把用户的输入的第2个 数字放到这里
+  400f4c:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx #8 #rdx是 sscanf的第3个参数，会把用户的输入的第1个 数字放到这里
+  400f51:	be cf 25 40 00       	mov    $0x4025cf,%esi #这个 是给sscanf传递的第二个参数，是设置 输入的格式的东西。
+                                                      #通过指令x/s 0x4025cf 查看到 格式为"%d %d"，即输入2个整数，但应该是8字节的long int
   400f56:	b8 00 00 00 00       	mov    $0x0,%eax
-  400f5b:	e8 90 fc ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
-  400f60:	83 f8 01             	cmp    $0x1,%eax
+  400f5b:	e8 90 fc ff ff       	callq  400bf0 <__isoc99_sscanf@plt> #sscanf的返回值 是 获取成功的输入的个数。
+  400f60:	83 f8 01             	cmp    $0x1,%eax #成功 输入个数 必须>1，否则会爆炸
   400f63:	7f 05                	jg     400f6a <phase_3+0x27>
   400f65:	e8 d0 04 00 00       	callq  40143a <explode_bomb>
-  400f6a:	83 7c 24 08 07       	cmpl   $0x7,0x8(%rsp)
+  400f6a:	83 7c 24 08 07       	cmpl   $0x7,0x8(%rsp) #如果 mem(0x8(%rsp))＞7，也就是用户第一个输入的值>7, 那么爆炸
   400f6f:	77 3c                	ja     400fad <phase_3+0x6a>
-  400f71:	8b 44 24 08          	mov    0x8(%rsp),%eax
-  400f75:	ff 24 c5 70 24 40 00 	jmpq   *0x402470(,%rax,8)
+  400f71:	8b 44 24 08          	mov    0x8(%rsp),%eax #把用户输入的第一个值 放到 eax中
+  400f75:	ff 24 c5 70 24 40 00 	jmpq   *0x402470(,%rax,8) #间接跳转，以 mem(0x402470(,%rax,8))为目标
+
+#如果第一个值为1，那么跳转到 400fb9 ；如果是2。按照1来走，就能找到结果了，所以后面的情况没看...
+
   400f7c:	b8 cf 00 00 00       	mov    $0xcf,%eax
   400f81:	eb 3b                	jmp    400fbe <phase_3+0x7b>
   400f83:	b8 c3 02 00 00       	mov    $0x2c3,%eax
@@ -414,7 +418,7 @@ Disassembly of section .text:
   400fb2:	b8 00 00 00 00       	mov    $0x0,%eax
   400fb7:	eb 05                	jmp    400fbe <phase_3+0x7b>
   400fb9:	b8 37 01 00 00       	mov    $0x137,%eax
-  400fbe:	3b 44 24 0c          	cmp    0xc(%rsp),%eax
+  400fbe:	3b 44 24 0c          	cmp    0xc(%rsp),%eax #如果第2个数 和 0x137(311)相等，那么就不会爆炸
   400fc2:	74 05                	je     400fc9 <phase_3+0x86>
   400fc4:	e8 71 04 00 00       	callq  40143a <explode_bomb>
   400fc9:	48 83 c4 18          	add    $0x18,%rsp
