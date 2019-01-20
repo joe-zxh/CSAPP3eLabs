@@ -426,16 +426,16 @@ Disassembly of section .text:
 
 0000000000400fce <func4>:
   400fce:	48 83 ec 08          	sub    $0x8,%rsp
-  400fd2:	89 d0                	mov    %edx,%eax
-  400fd4:	29 f0                	sub    %esi,%eax
-  400fd6:	89 c1                	mov    %eax,%ecx
-  400fd8:	c1 e9 1f             	shr    $0x1f,%ecx
-  400fdb:	01 c8                	add    %ecx,%eax
-  400fdd:	d1 f8                	sar    %eax
-  400fdf:	8d 0c 30             	lea    (%rax,%rsi,1),%ecx
-  400fe2:	39 f9                	cmp    %edi,%ecx
+  400fd2:	89 d0                	mov    %edx,%eax #14
+  400fd4:	29 f0                	sub    %esi,%eax #eax=14-0=14
+  400fd6:	89 c1                	mov    %eax,%ecx #ecx=14
+  400fd8:	c1 e9 1f             	shr    $0x1f,%ecx #ecx 逻辑右移(左边填充0)31位，出来ecx=0
+  400fdb:	01 c8                	add    %ecx,%eax #eax=14
+  400fdd:	d1 f8                	sar    %eax #算数右移(左边填充符号位)，出来7
+  400fdf:	8d 0c 30             	lea    (%rax,%rsi,1),%ecx #ecx=rax+rsi=7+0=7
+  400fe2:	39 f9                	cmp    %edi,%ecx # <=14  7
   400fe4:	7e 0c                	jle    400ff2 <func4+0x24>
-  400fe6:	8d 51 ff             	lea    -0x1(%rcx),%edx
+  400fe6:	8d 51 ff             	lea    -0x1(%rcx),%edx #
   400fe9:	e8 e0 ff ff ff       	callq  400fce <func4>
   400fee:	01 c0                	add    %eax,%eax
   400ff0:	eb 15                	jmp    401007 <func4+0x39>
@@ -448,25 +448,86 @@ Disassembly of section .text:
   401007:	48 83 c4 08          	add    $0x8,%rsp
   40100b:	c3                   	retq   
 
+可以写出如下的func4的等价代码，只需要遍历x<=14的整数即可。得到那些返回值是0的x值，即为用户的第一个 输入的值。
+得到x=7时满足条件
+#include<iostream>
+using namespace std;
+
+int func4(int *x, int *y, int *z){
+    //x在edi中，是用户输入的，在前面的要求中，它需要<=14
+    //y在esi中
+    //z在edx中
+
+    int t0 = *z;//t0是eax  400fce
+
+    t0 -= *y;//400fd4
+
+    unsigned int t1 = t0;//t1是ecx  400fd6
+
+    t1>>=31;//左边填0 逻辑移位
+
+    t0 += t1;
+
+    t0>>=1;//左边填符号位 算数移位
+
+    t1 = t0 +*y;
+
+    if(t1<=*x){
+        t0=0;
+        if(t1>=*x){
+            return t0;
+        }else{
+            *y = t1+1;
+            func4(x,y,z);
+            t0=t0+t0+1;
+            return t0;
+        }
+    }else{
+        *z=t1-1;//400fe6
+        func4(x,y,z);//400fe9
+        t0+=t0;//400fee
+        return t0;//
+    }
+
+    //如果返回时t0=0，那么就是正确的输出。
+}
+
+int main()
+{
+  int x = 0;
+  int y = 0;
+  int z = 14;
+
+  for (int i=0;i<=14;i++){
+    x = i;
+    y = 0;
+    z = 14;
+    cout<<x<<"  "<<func4(&x,&y,&z)<<endl;
+  }
+
+  return 0;
+}
+
+
 000000000040100c <phase_4>:
   40100c:	48 83 ec 18          	sub    $0x18,%rsp
   401010:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
   401015:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
-  40101a:	be cf 25 40 00       	mov    $0x4025cf,%esi
+  40101a:	be cf 25 40 00       	mov    $0x4025cf,%esi #类似phase_3,也是2个整数int的输入。
   40101f:	b8 00 00 00 00       	mov    $0x0,%eax
   401024:	e8 c7 fb ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
-  401029:	83 f8 02             	cmp    $0x2,%eax
+  401029:	83 f8 02             	cmp    $0x2,%eax #必须是接收到2个整数的输入，才不会爆炸
   40102c:	75 07                	jne    401035 <phase_4+0x29>
-  40102e:	83 7c 24 08 0e       	cmpl   $0xe,0x8(%rsp)
+  40102e:	83 7c 24 08 0e       	cmpl   $0xe,0x8(%rsp) #第一个输入值需要＜= 0xe(14)
   401033:	76 05                	jbe    40103a <phase_4+0x2e>
   401035:	e8 00 04 00 00       	callq  40143a <explode_bomb>
-  40103a:	ba 0e 00 00 00       	mov    $0xe,%edx
-  40103f:	be 00 00 00 00       	mov    $0x0,%esi
-  401044:	8b 7c 24 08          	mov    0x8(%rsp),%edi
-  401048:	e8 81 ff ff ff       	callq  400fce <func4>
-  40104d:	85 c0                	test   %eax,%eax
-  40104f:	75 07                	jne    401058 <phase_4+0x4c>
-  401051:	83 7c 24 0c 00       	cmpl   $0x0,0xc(%rsp)
+  40103a:	ba 0e 00 00 00       	mov    $0xe,%edx      #func4的第3个参数为14
+  40103f:	be 00 00 00 00       	mov    $0x0,%esi      #func4的第2个参数为0
+  401044:	8b 7c 24 08          	mov    0x8(%rsp),%edi #func4的第1个参数为 用户的第1个输入
+  401048:	e8 81 ff ff ff       	callq  400fce <func4> #eax出来必须为0
+  40104d:	85 c0                	test   %eax,%eax #eax必须为0，否则爆炸
+  40104f:	75 07                	jne    401058 <phase_4+0x4c> #非0的时候爆炸
+  401051:	83 7c 24 0c 00       	cmpl   $0x0,0xc(%rsp) #用户的第2个输入必须是0，否则还是会爆炸
   401056:	74 05                	je     40105d <phase_4+0x51>
   401058:	e8 dd 03 00 00       	callq  40143a <explode_bomb>
   40105d:	48 83 c4 18          	add    $0x18,%rsp
