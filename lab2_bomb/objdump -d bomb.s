@@ -384,8 +384,8 @@ Disassembly of section .text:
 
 0000000000400f43 <phase_3>:
   400f43:	48 83 ec 18          	sub    $0x18,%rsp #24
-  400f47:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx #12 #rcx是 sscanf的第4个参数，会把用户的输入的第2个 数字放到这里
-  400f4c:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx #8 #rdx是 sscanf的第3个参数，会把用户的输入的第1个 数字放到这里
+  400f47:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx #12 #rcx的位置 放的是 sscanf的第4个参数，会把用户的输入的第2个 数字放到这里
+  400f4c:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx #8 #rdx的位置 放的是 sscanf的第3个参数，会把用户的输入的第1个 数字放到这里
   400f51:	be cf 25 40 00       	mov    $0x4025cf,%esi #这个 是给sscanf传递的第二个参数，是设置 输入的格式的东西。
                                                       #通过指令x/s 0x4025cf 查看到 格式为"%d %d"，即输入2个整数，但应该是8字节的long int
   400f56:	b8 00 00 00 00       	mov    $0x0,%eax
@@ -652,9 +652,9 @@ int main()
   40119f:	b8 01 00 00 00       	mov    $0x1,%eax #joe: 注意可能出错的地方
   4011a4:	ba d0 32 60 00       	mov    $0x6032d0,%edx
   4011a9:	eb cb                	jmp    401176 <phase_6+0x82>
-  4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx #joe: 注意可能出错的地方
-  4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax #joe: 注意可能出错的地方
-  4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi #joe: 注意可能出错的地方
+  4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx #joe: 注意可能出错的地方。rbx放的是值
+  4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax #joe: 注意可能出错的地方。rax放的是地址
+  4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi #joe: 注意可能出错的地方。rsi放的是地址
   4011ba:	48 89 d9             	mov    %rbx,%rcx
   4011bd:	48 8b 10             	mov    (%rax),%rdx
   4011c0:	48 89 51 08          	mov    %rdx,0x8(%rcx) #这条指令 有什么用吗？？？

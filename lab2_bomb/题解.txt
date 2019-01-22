@@ -13,6 +13,8 @@ phase4:
 phase5:
 )/.%&'
 
+phase6:
+4 3 2 1 6 5
 
 
 Border relations with Canada have never been better.
@@ -20,6 +22,5 @@ Border relations with Canada have never been better.
 1 311
 7 0
 )/.%&'
-1 2 3 4 5 6
-
+4 3 2 1 6 5
 
