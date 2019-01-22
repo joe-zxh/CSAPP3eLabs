@@ -623,7 +623,7 @@ Disassembly of section .text:
 
 0000000000401204 <fun7>:
   401204:	48 83 ec 08          	sub    $0x8,%rsp
-  401208:	48 85 ff             	test   %rdi,%rdi
+  401208:	48 85 ff             	test   %rdi,%rdi #应该是 非0的时候继续执行
   40120b:	74 2b                	je     401238 <fun7+0x34>
   40120d:	8b 17                	mov    (%rdi),%edx
   40120f:	39 f2                	cmp    %esi,%edx
@@ -635,33 +635,33 @@ Disassembly of section .text:
   401220:	b8 00 00 00 00       	mov    $0x0,%eax
   401225:	39 f2                	cmp    %esi,%edx
   401227:	74 14                	je     40123d <fun7+0x39>
-  401229:	48 8b 7f 10          	mov    0x10(%rdi),%rdi
+  401229:	48 8b 7f 10          	mov    0x10(%rdi),%rdi #16
   40122d:	e8 d2 ff ff ff       	callq  401204 <fun7>
   401232:	8d 44 00 01          	lea    0x1(%rax,%rax,1),%eax
   401236:	eb 05                	jmp    40123d <fun7+0x39>
-  401238:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
+  401238:	b8 ff ff ff ff       	mov    $0xffffffff,%eax #-1
   40123d:	48 83 c4 08          	add    $0x8,%rsp
   401241:	c3                   	retq   
 
 0000000000401242 <secret_phase>:
   401242:	53                   	push   %rbx
-  401243:	e8 56 02 00 00       	callq  40149e <read_line>
-  401248:	ba 0a 00 00 00       	mov    $0xa,%edx
-  40124d:	be 00 00 00 00       	mov    $0x0,%esi
-  401252:	48 89 c7             	mov    %rax,%rdi
-  401255:	e8 76 f9 ff ff       	callq  400bd0 <strtol@plt>
-  40125a:	48 89 c3             	mov    %rax,%rbx
+  401243:	e8 56 02 00 00       	callq  40149e <read_line> #按照strtol的参数类型可以知道，输入的是一个长整数
+  401248:	ba 0a 00 00 00       	mov    $0xa,%edx #10 第3个参数 存的是进制。表示 转成10进制
+  40124d:	be 00 00 00 00       	mov    $0x0,%esi #0 第二个参数，存的是 结束位置。
+  401252:	48 89 c7             	mov    %rax,%rdi #第一个参数，rax存的是 输入的字符串的位置
+  401255:	e8 76 f9 ff ff       	callq  400bd0 <strtol@plt> #strtol把字符串根据 基 转换成相应的 long的整数
+  40125a:	48 89 c3             	mov    %rax,%rbx #rax是输入的长整数
   40125d:	8d 40 ff             	lea    -0x1(%rax),%eax
-  401260:	3d e8 03 00 00       	cmp    $0x3e8,%eax
+  401260:	3d e8 03 00 00       	cmp    $0x3e8,%eax //%rax-1需要<=1000才行,即输入的数<=1001
   401265:	76 05                	jbe    40126c <secret_phase+0x2a>
   401267:	e8 ce 01 00 00       	callq  40143a <explode_bomb>
-  40126c:	89 de                	mov    %ebx,%esi
-  40126e:	bf f0 30 60 00       	mov    $0x6030f0,%edi
+  40126c:	89 de                	mov    %ebx,%esi //fun7的第2个参数的值 应该就是用户的输入值
+  40126e:	bf f0 30 60 00       	mov    $0x6030f0,%edi // '$'字符的位置  fun7的第1个参数的值
   401273:	e8 8c ff ff ff       	callq  401204 <fun7>
-  401278:	83 f8 02             	cmp    $0x2,%eax
+  401278:	83 f8 02             	cmp    $0x2,%eax #fun7的返回值必须为2才行，否则爆炸
   40127b:	74 05                	je     401282 <secret_phase+0x40>
   40127d:	e8 b8 01 00 00       	callq  40143a <explode_bomb>
-  401282:	bf 38 24 40 00       	mov    $0x402438,%edi
+  401282:	bf 38 24 40 00       	mov    $0x402438,%edi #字符串"Wow! You've defused the secret stage!"
   401287:	e8 84 f8 ff ff       	callq  400b10 <puts@plt>
   40128c:	e8 33 03 00 00       	callq  4015c4 <phase_defused>
   401291:	5b                   	pop    %rbx
@@ -926,27 +926,27 @@ Disassembly of section .text:
                                       #如果不是第6个phase就跳到40163f
 
   4015df:	75 5e                	jne    40163f <phase_defused+0x7b>
-  4015e1:	4c 8d 44 24 10       	lea    0x10(%rsp),%r8 #16
+  4015e1:	4c 8d 44 24 10       	lea    0x10(%rsp),%r8 #16 存放第3个输入
   4015e6:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx #12
   4015eb:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx #8
   4015f0:	be 19 26 40 00       	mov    $0x402619,%esi #通过 x/s 0x402619 查看输入为 %d %d %s
-  4015f5:	bf 70 38 60 00       	mov    $0x603870,%edi #edi放的是用户输入的字符
+  4015f5:	bf 70 38 60 00       	mov    $0x603870,%edi #edi放的是用户输入的字符，看到的是第4个phase的输入
   4015fa:	e8 f1 f5 ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
   4015ff:	83 f8 03             	cmp    $0x3,%eax
-  401602:	75 31                	jne    401635 <phase_defused+0x71>
-  401604:	be 22 26 40 00       	mov    $0x402622,%esi
-  401609:	48 8d 7c 24 10       	lea    0x10(%rsp),%rdi
+  401602:	75 31                	jne    401635 <phase_defused+0x71> #需要3个输入才不会爆炸
+  401604:	be 22 26 40 00       	mov    $0x402622,%esi #通过 x/s 0x402622 查看到密文是 DrEvil
+  401609:	48 8d 7c 24 10       	lea    0x10(%rsp),%rdi #rdi放的是 第3个输入
   40160e:	e8 25 fd ff ff       	callq  401338 <strings_not_equal>
-  401613:	85 c0                	test   %eax,%eax
-  401615:	75 1e                	jne    401635 <phase_defused+0x71>
-  401617:	bf f8 24 40 00       	mov    $0x4024f8,%edi
-  40161c:	e8 ef f4 ff ff       	callq  400b10 <puts@plt>
-  401621:	bf 20 25 40 00       	mov    $0x402520,%edi
-  401626:	e8 e5 f4 ff ff       	callq  400b10 <puts@plt>
+  401613:	85 c0                	test   %eax,%eax #输入的字符串 和 DrEvil相等的话，那么 eax=0
+  401615:	75 1e                	jne    401635 <phase_defused+0x71> #非0跳转
+  401617:	bf f8 24 40 00       	mov    $0x4024f8,%edi #字符串"Curses, you've found the secret phase!"的位置
+  40161c:	e8 ef f4 ff ff       	callq  400b10 <puts@plt> #打印上述的 字符串
+  401621:	bf 20 25 40 00       	mov    $0x402520,%edi #字符串"But finding it and solving it are quite different..."的位置
+  401626:	e8 e5 f4 ff ff       	callq  400b10 <puts@plt> #打印上述的 字符串
   40162b:	b8 00 00 00 00       	mov    $0x0,%eax
-  401630:	e8 0d fc ff ff       	callq  401242 <secret_phase>
-  401635:	bf 58 25 40 00       	mov    $0x402558,%edi
-  40163a:	e8 d1 f4 ff ff       	callq  400b10 <puts@plt>
+  401630:	e8 0d fc ff ff       	callq  401242 <secret_phase> #调用secret_phase函数
+  401635:	bf 58 25 40 00       	mov    $0x402558,%edi #字符串"Congratulations! You've defused the bomb!"的位置
+  40163a:	e8 d1 f4 ff ff       	callq  400b10 <puts@plt> #打印上述的 字符串
   40163f:	48 8b 44 24 68       	mov    0x68(%rsp),%rax
   401644:	64 48 33 04 25 28 00 	xor    %fs:0x28,%rax
   40164b:	00 00 
