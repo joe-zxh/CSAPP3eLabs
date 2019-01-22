@@ -361,7 +361,7 @@ Disassembly of section .text:
   400efe:	48 83 ec 28          	sub    $0x28,%rsp
   400f02:	48 89 e6             	mov    %rsp,%rsi
   400f05:	e8 52 05 00 00       	callq  40145c <read_six_numbers> #读出来6个int。分别是 (rsp) (rsp+4) (rsp+8) (rsp+12) (rsp+16) (rsp+20)
-  400f0a:	83 3c 24 01          	cmpl   $0x1,(%rsp) #read_six_numbers的结果出来rsp的值为1，否则爆炸
+  400f0a:	83 3c 24 01          	cmpl   $0x1,(%rsp) #read_six_numbers的结果出来第一个值为1，否则爆炸
   400f0e:	74 20                	je     400f30 <phase_2+0x34>
   400f10:	e8 25 05 00 00       	callq  40143a <explode_bomb>
   400f15:	eb 19                	jmp    400f30 <phase_2+0x34>
@@ -448,72 +448,11 @@ Disassembly of section .text:
   401007:	48 83 c4 08          	add    $0x8,%rsp
   40100b:	c3                   	retq   
 
-可以写出如下的func4的等价代码，只需要遍历x<=14的整数即可。得到那些返回值是0的x值，即为用户的第一个 输入的值。
-得到x=7时满足条件
-#include<iostream>
-using namespace std;
-
-int func4(int *x, int *y, int *z){
-    //x在edi中，是用户输入的，在前面的要求中，它需要<=14
-    //y在esi中
-    //z在edx中
-
-    int t0 = *z;//t0是eax  400fce
-
-    t0 -= *y;//400fd4
-
-    unsigned int t1 = t0;//t1是ecx  400fd6
-
-    t1>>=31;//左边填0 逻辑移位
-
-    t0 += t1;
-
-    t0>>=1;//左边填符号位 算数移位
-
-    t1 = t0 +*y;
-
-    if(t1<=*x){
-        t0=0;
-        if(t1>=*x){
-            return t0;
-        }else{
-            *y = t1+1;
-            func4(x,y,z);
-            t0=t0+t0+1;
-            return t0;
-        }
-    }else{
-        *z=t1-1;//400fe6
-        func4(x,y,z);//400fe9
-        t0+=t0;//400fee
-        return t0;//
-    }
-
-    //如果返回时t0=0，那么就是正确的输出。
-}
-
-int main()
-{
-  int x = 0;
-  int y = 0;
-  int z = 14;
-
-  for (int i=0;i<=14;i++){
-    x = i;
-    y = 0;
-    z = 14;
-    cout<<x<<"  "<<func4(&x,&y,&z)<<endl;
-  }
-
-  return 0;
-}
-
-
 000000000040100c <phase_4>:
   40100c:	48 83 ec 18          	sub    $0x18,%rsp
-  401010:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
-  401015:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
-  40101a:	be cf 25 40 00       	mov    $0x4025cf,%esi #类似phase_3,也是2个整数int的输入。
+  401010:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx #rsp+12是第2个输入的位置
+  401015:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx #rsp+8是第1个输入的位置
+  40101a:	be cf 25 40 00       	mov    $0x4025cf,%esi #类似phase_3,也是2个整数int的输入。"%d %d"
   40101f:	b8 00 00 00 00       	mov    $0x0,%eax
   401024:	e8 c7 fb ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
   401029:	83 f8 02             	cmp    $0x2,%eax #必须是接收到2个整数的输入，才不会爆炸
@@ -983,12 +922,15 @@ int main()
   4015d1:	48 89 44 24 68       	mov    %rax,0x68(%rsp)
   4015d6:	31 c0                	xor    %eax,%eax
   4015d8:	83 3d 81 21 20 00 06 	cmpl   $0x6,0x202181(%rip)        # 603760 <num_input_strings>
+                                      #为什么不是603759
+                                      #如果不是第6个phase就跳到40163f
+
   4015df:	75 5e                	jne    40163f <phase_defused+0x7b>
-  4015e1:	4c 8d 44 24 10       	lea    0x10(%rsp),%r8
-  4015e6:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
-  4015eb:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
-  4015f0:	be 19 26 40 00       	mov    $0x402619,%esi
-  4015f5:	bf 70 38 60 00       	mov    $0x603870,%edi
+  4015e1:	4c 8d 44 24 10       	lea    0x10(%rsp),%r8 #16
+  4015e6:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx #12
+  4015eb:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx #8
+  4015f0:	be 19 26 40 00       	mov    $0x402619,%esi #通过 x/s 0x402619 查看输入为 %d %d %s
+  4015f5:	bf 70 38 60 00       	mov    $0x603870,%edi #edi放的是用户输入的字符
   4015fa:	e8 f1 f5 ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
   4015ff:	83 f8 03             	cmp    $0x3,%eax
   401602:	75 31                	jne    401635 <phase_defused+0x71>

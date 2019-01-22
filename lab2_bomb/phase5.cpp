@@ -7,11 +7,7 @@ void bomb(){
   cout<<"bomb！！！"<<endl;
 }
 
-bool checkStr(char *input, char *secret){
-
-    cout<<input<<endl;
-    cout<<secret<<endl;
-
+bool checkStr(char *input, char *secret){//判断输入 和 密文之间是否相同。
     int lenInput = strlen(input);
     int lenSecret = strlen(secret);
 
@@ -32,11 +28,13 @@ char secreteCode[] = "maduiersnfotvbylSo you think you can stop the bomb with ct
 
 //注意大小端的问题，左边的元素是小的。
 //rsp数组 靠左边的元素是低位。而别的8字节的数组，靠右边的是低位
-bool phase5(char *rdi){//8个字节的内容，但只有5个字节的字符串
+bool phase5(char *rdi, int n){//8个字节的内容，但只有5个字节的字符串
     // rdi = new char[8]; 记得要delete
     // 寄存器 %rdi 的值是一个指针(而不是一个整数)，即
     // %rdi = rdi;
     // (%rdi) = *(long int*)rdi
+
+    //n表示现在搜的是第n个字符是否正确，如果n=-1，表示搜的是整个字符串
 
     bool retB = false;
 
@@ -133,7 +131,11 @@ bool phase5(char *rdi){//8个字节的内容，但只有5个字节的字符串
             //4010b8
             rdi =rsp+0x10;
 
-            retB =checkStr(rdi, rsi);       
+            if(n==-1){
+                retB =checkStr(rdi, rsi); //比较整个字符串（对比正确答案时用）
+            }else{
+                return (rsi[n]==rdi[n]); //比较第n个字符（遍历时用）
+            }                  
 
         }else{//跳转到40108b
             goto gt40108b;
@@ -155,44 +157,33 @@ bool phase5(char *rdi){//8个字节的内容，但只有5个字节的字符串
 
 int main()
 {
-    char input[8]="heyhey";
+    char input[8]="heyhey";//随便一个初始值
 
-    int left = 32;
+    int left = 32;//设置遍历的左右边界
     int right = 126;
-
-    input[0]=41;
-    input[1]=47;
-    input[2]=46;
-    input[3]=37;
-    input[4]=38;
-    input[5]=39;
+  
+    for(int i = 0;i<=5;i++){
+        for(int j=left;j<right;j++){
+            input[i]=j;
+            if(phase5(input,i)){
+                break;
+            }
+        }
+    }
+    cout<<input[0]<<endl;
+    cout<<input[1]<<endl;
+    cout<<input[2]<<endl;
+    cout<<input[3]<<endl;
+    cout<<input[4]<<endl;
+    cout<<input[5]<<endl;
 
     // 结果为：   )/.%&'
-
-    //暴力遍历法: 一个字符一个字符锁住 遍历即可，600次即可 遍历完。
-    for(int i=left;i<=right;i++){
-        //for(int j=left;j<=right;j++){
-            //for(int k=left;k<=right;k++){
-                //for(int x=left;x<=right;x++){
-                    //for(int y=left;y<=right;y++){
-                        //for(int z=left;z<=right;z++){
-                            input[0]=i;
-                            //input[1]=j;
-                            //input[2]=k;
-                            //input[3]=x;
-                            //input[4]=y;
-                            //input[5]=z;
-                            if(phase5(input)){
-                                cout<<"success!!!"<<endl;
-                                cout<<input<<endl;
-                                break;
-                            }
-                        //}
-                    //}
-                //}
-            //}
-        //}
-    }
+    // input[0]=41;
+    // input[1]=47;
+    // input[2]=46;
+    // input[3]=37;
+    // input[4]=38;
+    // input[5]=39;
 
   return 0;
 }

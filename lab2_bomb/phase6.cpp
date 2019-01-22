@@ -128,6 +128,7 @@ public:
 
 };
 
+//查看rsp+32 ~ rsp+80之间存的值
 void print32to80(char *pch, map<long, long>mm){
     long *p = (long *)pch;
     cout<<hex;
@@ -270,7 +271,7 @@ bool phase6(int a, int b, int c, int d, int e, int f){
                         rdx.setv64(rax.getv64FromPointer());//rdx一开始 存的是 rsp+40位置上的值
 
                         //重要！！！rcx是前一个值，rdx是后一个值，最后出来的结果就是：
-                        // mem(value(rsp+偏移)+8)=value(rsp+偏移+8)
+                        // simulatedMemory(value(rsp+偏移)+8)=value(rsp+偏移+8)
 
                         //4011c0 有问题...!!!
                         simulatedMemory[0x8+rcx.getv64()] = rdx.getv64();
@@ -299,7 +300,7 @@ bool phase6(int a, int b, int c, int d, int e, int f){
                                 return false;
                             }
 
-                            rax.setv64((int)simulatedMemory[rax.getv64()]);//4011e3 注意这里别用int不然不够大
+                            rax.setv64((int)simulatedMemory[rax.getv64()]);//4011e3
 
                             //4011e5 4011e7
                             if((int)simulatedMemory[rbx.getv64()]>=rax.geti32()){ 
