@@ -60,6 +60,14 @@ objdump -d cl3Draft.o > cl3Binary.s
 ./ctarget -q < cl3raw.txt
 
 
+rtarget level2:
+
+每次 Gets完之后，rsp的值都不一样的，但 很神奇的是，它所指向的地址的内容都是 一样的，即：
+print /x *(long *) $rsp 都一样。在这个位置放 要使用的代码的 位置即可。
+
+
+rtarget level3:
+
 
 
 
