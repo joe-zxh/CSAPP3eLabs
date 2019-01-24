@@ -39,6 +39,26 @@ objdump -d cl2Draft.o > cl2Binary.s
 
 ctarget level3:
 
+和ctarget level2非常类似，但 需要注意 输入的参数变量(字符串cookie)别被覆盖，
+只需要把 cookie放在比rsp的地址 更大的地方，就不会被覆盖。
+
+1. 把需要用到的命令放在cl3Draft.s中，使用gcc命令编译成目标代码：
+gcc -c cl3Draft.s
+得到一个目标代码： cl3Draft.o
+
+2. 反汇编 成汇编代码：
+objdump -d cl3Draft.o > cl3Binary.s
+得到文件 cl3Binary.s
+
+3. 查看cl3Binary.s中的二进制代码
+修改并 加入 地址那些内容，写入文件 cl3hex.txt中
+
+4. 把 cl3hex.txt 转换成 cl3raw.txt：
+./hex2raw < cl3hex.txt > cl3raw.txt
+
+5. 运行程序：
+./ctarget -q < cl3raw.txt
+
 
 
 

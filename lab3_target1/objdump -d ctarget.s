@@ -874,7 +874,7 @@ Disassembly of section .text:
   4018fe:	c7 05 d4 2b 20 00 03 	movl   $0x3,0x202bd4(%rip)        # 6044dc <vlevel>
   401905:	00 00 00 
   401908:	48 89 fe             	mov    %rdi,%rsi
-  40190b:	8b 3d d3 2b 20 00    	mov    0x202bd3(%rip),%edi        # 6044e4 <cookie>
+  40190b:	8b 3d d3 2b 20 00    	mov    0x202bd3(%rip),%edi        # 6044e4 <cookie>  %edi就是cookie(注意是unsign的)：0x59b997fa
   401911:	e8 36 ff ff ff       	callq  40184c <hexmatch>
   401916:	85 c0                	test   %eax,%eax
   401918:	74 23                	je     40193d <touch3+0x43>
