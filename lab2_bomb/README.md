@@ -1,3 +1,4 @@
+# lab2 bomblab
 ## 题解
 Border relations with Canada have never been better.
 1 2 4 8 16 32
