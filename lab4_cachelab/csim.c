@@ -17,7 +17,8 @@ struct Block{
     long tag;
     //int lineNum;//这个可以算的
     int valid;
-    int count;//使用次数
+    //int count;//使用次数
+    int timestamp;//用来判断哪个"更旧"，旧的要被evict掉
 };
 
 #define BUFSIZE 256
@@ -25,6 +26,13 @@ struct Block{
 #define LENSIZE 9 //数据不会超过8个字节的。
 
 int hits,misses,evictions;
+
+void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, int s, int E, int b, int verbose, int currentTime);
+void line2Addr(char line[BUFSIZE], unsigned long *address, int *dataLen);
+void init(struct Block *blocks, int S, int E, int *firstEmpLine);
+void printArgs(int argc,char* argv[]);
+void parseArgs(int argc,char* argv[], int *verbose, int *s, int *E, int*b, char traceFile[BUFSIZE]);
+void printHelp();
 
 int main(int argc,char* argv[])
 {
@@ -38,8 +46,8 @@ int main(int argc,char* argv[])
 
 
     int S = (1<<(s));
-    int B = (1<<(b));
-    int t = 64-s-b;//tag的长度
+//    int B = (1<<(b));
+//    int t = 64-s-b;//tag的长度
 
 
     struct Block *blocks = NULL;
@@ -57,6 +65,7 @@ int main(int argc,char* argv[])
         printf("failed to open dos.txt\n");
         return 1;
     }
+    int currentTime = 1;
 
     while(!feof(fp))
     {
@@ -67,7 +76,8 @@ int main(int argc,char* argv[])
           *find = '\0';                    //就把一个空字符放在这里
         //printf("%s", line);
 
-        processLine(line, blocks, firstEmpLine, s, E, b, verbose);
+        processLine(line, blocks, firstEmpLine, s, E, b, verbose, currentTime);
+        currentTime++;
     }
 
     free(blocks);
@@ -80,7 +90,7 @@ int main(int argc,char* argv[])
     return 0;
 }
 
-void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, int s, int E, int b, int verbose){
+void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, int s, int E, int b, int verbose, int currentTime){
 
     if(!line || line[0]!=' ') { //忽略读指令的操作
         return ;
@@ -95,8 +105,8 @@ void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, in
     line2Addr(line, &address, &dataLen);
 
     int t=64-s-b;
-    int S = (1<<s);
-    int B = (1<<b);
+//    int S = (1<<s);
+//    int B = (1<<b);
 
     unsigned setNumber = ((address<<t)>>(t+b));
     long tag = (address>>(s+b)); //tag值
@@ -109,7 +119,8 @@ void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, in
     int hitIndex = -1;
 
     int leastAccessInd = startInd;//如果这个set是满的，那么要找到那个 访问最少的那个block。
-    int leastCount = (1<<30);//最少的访问次数
+    //int leastCount = (1<<30);//最少的访问次数
+    int oldest = 1<<30;//最旧的要被 替换掉
 
     //先检查有没有 hit
     for (int i = startInd;i<endIndx;i++){
@@ -120,7 +131,7 @@ void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, in
 
         if(blocks[i].tag==tag && blocks[i].valid) {
             //hit
-            blocks[i].count++;
+            blocks[i].timestamp=currentTime;
             hitIndex = i;
             if(verbose!=0){
                 printf(" hit");
@@ -130,10 +141,10 @@ void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, in
             break;
         }
 
-        if(blocks[i].valid && blocks[i].count<leastCount){
+        if(blocks[i].valid && blocks[i].timestamp<oldest){
             //更新leastCount
             leastAccessInd = i;
-            leastCount = blocks[i].count;
+            oldest = blocks[i].timestamp;
         }
     }
 
@@ -152,14 +163,12 @@ void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, in
                 printf("eviction ");
             }
 
-            blocks[leastAccessInd].count=1;
+            blocks[leastAccessInd].timestamp=currentTime;
             blocks[leastAccessInd].tag=tag;
 
-
             evictions++;
-
         }else{//这个set还没满，从第一个空的地方开始加入
-            blocks[firstEmpInd].count=1;
+            blocks[firstEmpInd].timestamp=currentTime;
             blocks[firstEmpInd].valid=1;
             blocks[firstEmpInd].tag=tag;
         }
@@ -230,13 +239,11 @@ void line2Addr(char line[BUFSIZE], unsigned long *address, int *dataLen){
 }
 
 
-
-
 void init(struct Block *blocks, int S, int E, int *firstEmpLine){
     int t = S*E;
     for (int i = 0;i<t;i++){
         blocks[i].valid = 0;
-        blocks[i].count = 0;
+        blocks[i].timestamp = 0;
     }
     for(int i = 0;i<S;i++){
         firstEmpLine[i]=0;
