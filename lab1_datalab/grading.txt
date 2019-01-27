@@ -1,0 +1,8 @@
+
+make #compile
+
+./btest #测试所有函数的功能
+./btest -f howManyBits #测试 某个函数功能
+./dlc -e bits.c #测试函数是否满足限制的要求
+
+./driver.pl #功能+限制 的总分
