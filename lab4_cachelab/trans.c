@@ -22,7 +22,46 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+    //printMatrixA(M,N,A,B);
+    //int t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11;//最多12个 局部变量
+    //if(M==32 && N==32)
+
+    //先处理不是对角线的情况。
+    for(int i = 0;i<4;i++){
+        for (int j=0;j<4;j++){
+            if(i==j){
+                // 对角线的情况
+
+                //切成2*2的。
+                for(int x=0;x<4;x++){
+                    for(int y=0;y<4;y++){
+                        for (int m = 0;m<2;m++){
+                            int row = i*8+x*2+m;
+                            int col = j*8+y*2;
+                            for(int n=0;n<2;n++){
+                                B[col+n][row] = A[row][col+n];
+                            }
+                        }
+                    }
+                }
+
+            }else{
+                //非对角线的情况
+                for(int m=0;m<8;m++){
+                    int row=i*8+m;
+                    int col = j*8;
+                    for(int n=0;n<8;n++) {
+                        B[col+n][row]=A[row][col+n];
+                    }
+                }
+            }
+        }
+    }
+    //printMatrixB(M,N,A,B);
+    printf("breakpoint\n");
 }
+
+
 
 /* 
  * You can define additional transpose functions below. We've defined

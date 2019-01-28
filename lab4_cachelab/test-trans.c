@@ -69,7 +69,7 @@ void eval_perf(unsigned int s, unsigned int E, unsigned int b)
         /* Use valgrind to generate the trace */
 
         sprintf(cmd, "valgrind --tool=lackey --trace-mem=yes --log-fd=1 -v ./tracegen -M %d -N %d -F %d  > trace.tmp", M, N,i);
-        flag=WEXITSTATUS(system(cmd));
+        flag=WEXITSTATUS(system(cmd)); //入口，估计执行完这里，就会有一个trace.fi生成。
         if (0!=flag) {
             printf("Validation error at function %d! Run ./tracegen -M %d -N %d -F %d for details.\nSkipping performance evaluation for this function.\n",flag-1,M,N,i);      
             continue;
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
     alarm(120);
 
     /* Check the performance of the student's transpose function */
-    eval_perf(5, 1, 5);
+    eval_perf(5, 1, 5); //入口
   
     /* Emit the results for this particular test */
     if (results.funcid == -1) {
