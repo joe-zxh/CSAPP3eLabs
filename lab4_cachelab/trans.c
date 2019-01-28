@@ -24,12 +24,79 @@ char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
     int i,j,m,n;
-
-    //if(M==32 && N==32)
-
+    int t0,t1,t2,t3;
     //先处理不是对角线的情况。
-    for(i = 0;i<M/8;i++){
-        for (j=0;j<M/8;j++){
+    for(i = 0;i<8;i++){
+        for (j=0;j<8;j++){
+            if(0){
+                // 对角线的8*8的情况
+                trans8by8(M,N,A,B,i,j);
+                //printMatrixB(M,N,A,B);
+                //printf("breakpoint\n");
+            }else{
+                //非对角线的情况
+                //A:
+                //(i*8, j*8)    (i*8, j*8+8)
+                //
+                //(i*8+8, j*8)  (i*8+8, j*8+8)
+
+                //B:
+                //(j*8, i*8)    (j*8, i*8+8)
+                //(j*8+8, i*8) (j*8+8, i*8+8)
+
+
+                //step1: A的左上到B的左上 8misses
+                for(m=i*8;m<i*8+4;m++){
+                    for(n=j*8;n<j*8+4;n++){
+                        B[n][m] = A[m][n];
+                    }
+                }
+
+                t0=A[i*8][j*8+4];
+                t1=A[i*8][j*8+5];
+                t2=A[i*8][j*8+6];
+                t3=A[i*8][j*8+7];
+
+                //step4: A的左下到B的右上 4misses
+                for(m=i*8+4;m<i*8+8;m++){
+                    for(n=j*8;n<j*8+4;n++){
+                        B[n][m] = A[m][n];
+                    }
+                }
+
+
+                //step3: A的右下到B的右下 4misses
+                for(m=i*8+4;m<i*8+8;m++){
+                    for(n=j*8+4;n<j*8+8;n++){
+                        B[n][m] = A[m][n];
+                    }
+                }
+
+                //step2: A的右上到B的左下 4misses
+                for(m=i*8;m<i*8+4;m++){
+                    for(n=j*8+4;n<j*8+8;n++){
+                        B[n][m] = A[m][n];
+                    }
+                }
+                B[j*8+4][i*8]=t0;
+                B[j*8+5][i*8]=t1;
+                B[j*8+6][i*8]=t2;
+                B[j*8+7][i*8]=t3;
+
+            }
+        }
+    }
+    //printMatrixB(M,N,A,B);
+}
+
+
+
+
+void dealWith32(int M, int N, int A[N][M], int B[M][N]){
+    int i,j,m,n;
+    //先处理不是对角线的情况。
+    for(i = 0;i<4;i++){
+        for (j=0;j<4;j++){
             if(i==j){
                 // 对角线的8*8的情况
                 trans8by8(M,N,A,B,i,j);
@@ -37,12 +104,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 //printf("breakpoint\n");
             }else{
                 //非对角线的情况
-                for(m=0;m<4;m++){
-                    for(n=0;n<8;n++) {
-                        B[j*8+n][i*8+m]=A[i*8+m][j*8+n];
-                    }
-                }
-                for(m=4;m<8;m++){
+                for(m=0;m<8;m++){
                     for(n=0;n<8;n++) {
                         B[j*8+n][i*8+m]=A[i*8+m][j*8+n];
                     }
@@ -53,7 +115,6 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
     //printMatrixB(M,N,A,B);
     //printf("breakpoint\n");
 }
-
 
 void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
     int x, y, t0,t1,t2,t3;;
