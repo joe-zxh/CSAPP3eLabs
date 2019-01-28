@@ -23,13 +23,13 @@ void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
-    //printMatrixA(M,N,A,B);
-    //int t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11;//最多12个 局部变量
+    int i,j,m,n;
+
     //if(M==32 && N==32)
 
     //先处理不是对角线的情况。
-    for(int i = 0;i<4;i++){
-        for (int j=0;j<4;j++){
+    for(i = 0;i<M/8;i++){
+        for (j=0;j<M/8;j++){
             if(i==j){
                 // 对角线的8*8的情况
                 trans8by8(M,N,A,B,i,j);
@@ -37,11 +37,14 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 //printf("breakpoint\n");
             }else{
                 //非对角线的情况
-                for(int m=0;m<8;m++){
-                    int row=i*8+m;
-                    int col = j*8;
-                    for(int n=0;n<8;n++) {
-                        B[col+n][row]=A[row][col+n];
+                for(m=0;m<4;m++){
+                    for(n=0;n<8;n++) {
+                        B[j*8+n][i*8+m]=A[i*8+m][j*8+n];
+                    }
+                }
+                for(m=4;m<8;m++){
+                    for(n=0;n<8;n++) {
+                        B[j*8+n][i*8+m]=A[i*8+m][j*8+n];
                     }
                 }
             }
@@ -53,14 +56,16 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 
 
 void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
+    int x, y, t0,t1,t2,t3;;
+
     //切成4*4的。
 
     //step1:8个miss(A:4miss  B:4miss)
-    for(int x=4;x<8;x++){
-        for(int y=0;y<4;y++){
+    for(x=4;x<8;x++){
+        for(y=0;y<4;y++){
             B[i*8+x][j*8+y] = A[j*8+y][i*8+x];//填充B的左下的4*4
         }
-        for(int y=4;y<8;y++){
+        for(y=4;y<8;y++){
             B[i*8+x][j*8+y] = A[i*8+x-4][j*8+y-4];//填充B的右下的4*4
         }
     }
@@ -68,8 +73,8 @@ void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
     //printMatrixB(M,N,A,B);
 
     //step2:4个miss(B:4miss)
-    for(int x=0;x<4;x++){
-        for(int y=0;y<4;y++){
+    for(x=0;x<4;x++){
+        for(y=0;y<4;y++){
             B[i*8+x][j*8+y] = B[j*8+4+y][i*8+4+x];//填充B的左上的4*4
         }
     }
@@ -77,8 +82,8 @@ void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
     //printMatrixB(M,N,A,B);
 
     //step3:4个miss(A:4miss)
-    for(int x=0;x<4;x++){
-        for(int y=4;y<8;y++){
+    for(x=0;x<4;x++){
+        for(y=4;y<8;y++){
             B[i*8+x][j*8+y] = A[j*8+y][i*8+x];//填充B的右上的4*4
         }
     }
@@ -88,8 +93,7 @@ void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
     //step4: 现在还剩最后B的右下角的4*4不正确了
     //现在只剩11个miss能用了。
 
-    //step4_1: 填充
-    int t0,t1,t2,t3;//记录A的右下角2*2的元素(0 miss)
+    //step4_1: 记录A的右下角2*2的元素(0 miss)
     t0 = A[i*8+6][j*8+6];
     t1 = A[i*8+6][j*8+7];
     t2 = A[i*8+7][j*8+6];
@@ -147,14 +151,14 @@ void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
 char trans_desc[] = "Simple row-wise scan transpose";
 void trans(int M, int N, int A[N][M], int B[M][N])
 {
-    int i, j, tmp;
-
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < M; j++) {
-            tmp = A[i][j];
-            B[j][i] = tmp;
-        }
-    }    
+//    int i, j, tmp;
+//
+//    for (i = 0; i < N; i++) {
+//        for (j = 0; j < M; j++) {
+//            tmp = A[i][j];
+//            B[j][i] = tmp;
+//        }
+//    }
 
 }
 
