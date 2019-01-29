@@ -27,9 +27,9 @@ struct Block{
 
 int hits,misses,evictions;
 
-void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, int s, int E, int b, int verbose, int currentTime);
+void processLine(char line[BUFSIZE], struct Block *blocks, int s, int E, int b, int verbose, int currentTime);
 void line2Addr(char line[BUFSIZE], unsigned long *address, int *dataLen);
-void init(struct Block *blocks, int S, int E, int *firstEmpLine);
+void init(struct Block *blocks, int S, int E);
 void printArgs(int argc,char* argv[]);
 void parseArgs(int argc,char* argv[], int *verbose, int *s, int *E, int*b, char traceFile[BUFSIZE]);
 void printHelp();
@@ -53,10 +53,7 @@ int main(int argc,char* argv[])
     struct Block *blocks = NULL;
     blocks = (struct Block*)malloc(S*E*sizeof(struct Block));
 
-    int *firstEmpLine = (int *)malloc(S*sizeof(int));//对于集合i中的 第一个空的line的位置。
-    //当firstEmpLine[i]==E时，说明 这个set中的所有line都用完了。
-
-    init(blocks, S, E, firstEmpLine);
+    init(blocks, S, E);
 
 
     FILE *fp = fopen(traceFile, "r");
@@ -76,12 +73,11 @@ int main(int argc,char* argv[])
           *find = '\0';                    //就把一个空字符放在这里
         //printf("%s", line);
 
-        processLine(line, blocks, firstEmpLine, s, E, b, verbose, currentTime);
+        processLine(line, blocks, s, E, b, verbose, currentTime);
         currentTime++;
     }
 
     free(blocks);
-    free(firstEmpLine);
 
     fclose(fp);
 
@@ -90,7 +86,7 @@ int main(int argc,char* argv[])
     return 0;
 }
 
-void processLine(char line[BUFSIZE], struct Block *blocks, int *firstEmpLine, int s, int E, int b, int verbose, int currentTime){
+void processLine(char line[BUFSIZE], struct Block *blocks, int s, int E, int b, int verbose, int currentTime){
 
     if(!line || line[0]!=' ') { //忽略读指令的操作
         return ;
@@ -239,14 +235,11 @@ void line2Addr(char line[BUFSIZE], unsigned long *address, int *dataLen){
 }
 
 
-void init(struct Block *blocks, int S, int E, int *firstEmpLine){
+void init(struct Block *blocks, int S, int E){
     int t = S*E;
     for (int i = 0;i<t;i++){
         blocks[i].valid = 0;
         blocks[i].timestamp = 0;
-    }
-    for(int i = 0;i<S;i++){
-        firstEmpLine[i]=0;
     }
 }
 
