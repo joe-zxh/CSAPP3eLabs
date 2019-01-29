@@ -25,14 +25,9 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
     int i,j,m,n;
     int t0;
+    //int t1,t2,t3,t4,t5,t6,t7;
 
-    for(i = 0;i+4<66;i+=4) {
-
-//        if(i+8<67){
-//            t1=i+8;
-//        }else{
-//            t1=67;
-//        };
+    for(i = 0;i+16<67;i+=16) {
 
         for(j=0;j+8<65;j+=8){
 
@@ -45,7 +40,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 t0=61;
             };
 
-            for(m=i;m<i+4;m++){
+            for(m=i;m<i+16;m++){
                 for(n=j;n<t0;n++){
                     B[n][m]=A[m][n];
                 }
@@ -53,17 +48,11 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
         }
     }
 
-//    for(i = 0;i<67;i++) {
-//        for(j=56;j<61;j++){
-//            B[j][i]=A[i][j];
-//        }
-//    }
-
-    // for(i = 64;i<67;i++) {
-    //     for(j=0;j<61;j++){
-    //         B[j][i]=A[i][j];
-    //     }
-    // }
+    for(i = 64;i<67;i++) {
+        for(j=0;j<61;j++){
+            B[j][i]=A[i][j];
+        }
+    }
 
 }
 
