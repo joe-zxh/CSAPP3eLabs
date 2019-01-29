@@ -11,7 +11,6 @@
 #include "cachelab.h"
 
 int is_transpose(int M, int N, int A[N][M], int B[M][N]);
-void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j);
 void normalCase(int M, int N, int A[N][M], int B[M][N]);
 void dealWith61x67(int M, int N, int A[N][M], int B[M][N]);
 void dealWith64(int M, int N, int A[N][M], int B[M][N]);
@@ -219,14 +218,75 @@ void dealWith64(int M, int N, int A[N][M], int B[M][N]){
 
 void dealWith32(int M, int N, int A[N][M], int B[M][N]){
     int i,j,m,n;
+    int t0,t1,t2,t3,t4,t5,t6,t7;
     //先处理不是对角线的情况。
     for(i = 0;i<4;i++){
         for (j=0;j<4;j++){
             if(i==j){
-                // 对角线的8*8的情况
-                trans8by8(M,N,A,B,i,j);
+                //step1: A的右上到 B的左下，A的左上到B的右下。8个miss(A:4miss  B:4miss)
+                for(m=4;m<8;m++){
+                    for(n=0;n<4;n++){
+                        B[i*8+m][j*8+n] = A[j*8+n][i*8+m];//填充B的左下的4*4
+                    }
+                    for(n=4;n<8;n++){
+                        B[i*8+m][j*8+n] = A[i*8+m-4][j*8+n-4];//填充B的右下的4*4
+                    }
+                }
+
+                //step2：B的右下到B的左上 (B:4miss)
+                for(m=0;m<4;m++){
+                    for(n=0;n<4;n++){
+                        B[i*8+m][j*8+n] = B[j*8+4+n][i*8+4+m];//填充B的左上的4*4
+                    }
+                }
+
+                //step3：A的左下到B的右上  在local里面记录A的右下的 前2行的值  (A:4miss)
+                for(m=0;m<4;m++){
+                    for(n=4;n<8;n++){
+                        B[i*8+m][j*8+n] = A[j*8+n][i*8+m];//填充B的右上的4*4
+                    }
+                }
+                t0=A[i*8+4][j*8+4];
+                t1=A[i*8+4][j*8+5];
+                t2=A[i*8+4][j*8+6];
+                t3=A[i*8+4][j*8+7];
+
+                t4=A[i*8+5][j*8+4];
+                t5=A[i*8+5][j*8+5];
+                t6=A[i*8+5][j*8+6];
+                t7=A[i*8+5][j*8+7];
+
                 //printMatrixB(M,N,A,B);
-                //printf("breakpoint\n");
+
+                //step4: A的右下的 后2行的值 存到B的右下的前2行中(B:2miss)
+                for(m=i*8+4;m<i*8+6;m++){
+                    for(n=j*8+4;n<i*8+8;n++){
+                        B[m][n] = A[m+2][n];
+                    }
+                }
+
+                //step5: A的右下的 4x4的内部操作 并且使用上前面的变量值(B:2miss)
+                B[i*8+6][j*8+6]=B[i*8+4][j*8+6];
+                B[i*8+6][j*8+7]=B[i*8+5][j*8+6];
+                B[i*8+7][j*8+6]=B[i*8+4][j*8+7];
+                B[i*8+7][j*8+7]=B[i*8+5][j*8+7];
+                //这4个操作必须在下面4个操作之前，否则会被覆盖。
+
+                B[i*8+4][j*8+6]=B[i*8+4][j*8+4];
+                B[i*8+4][j*8+7]=B[i*8+5][j*8+4];
+                B[i*8+5][j*8+6]=B[i*8+4][i*8+5];
+                B[i*8+5][j*8+7]=B[i*8+5][i*8+5];
+
+                B[i*8+4][j*8+4]=t0;
+                B[i*8+4][j*8+5]=t4;
+                B[i*8+5][j*8+4]=t1;
+                B[i*8+5][j*8+5]=t5;
+
+                B[i*8+6][j*8+4]=t2;
+                B[i*8+6][j*8+5]=t6;
+                B[i*8+7][j*8+4]=t3;
+                B[i*8+7][j*8+5]=t7;
+
             }else{
                 //非对角线的情况
                 for(m=0;m<8;m++){
@@ -237,90 +297,6 @@ void dealWith32(int M, int N, int A[N][M], int B[M][N]){
             }
         }
     }
-    //printMatrixB(M,N,A,B);
-    //printf("breakpoint\n");
-}
-
-void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
-    int x, y, t0,t1,t2,t3;;
-
-    //切成4*4的。
-
-    //step1:8个miss(A:4miss  B:4miss)
-    for(x=4;x<8;x++){
-        for(y=0;y<4;y++){
-            B[i*8+x][j*8+y] = A[j*8+y][i*8+x];//填充B的左下的4*4
-        }
-        for(y=4;y<8;y++){
-            B[i*8+x][j*8+y] = A[i*8+x-4][j*8+y-4];//填充B的右下的4*4
-        }
-    }
-
-    //printMatrixB(M,N,A,B);
-
-    //step2:4个miss(B:4miss)
-    for(x=0;x<4;x++){
-        for(y=0;y<4;y++){
-            B[i*8+x][j*8+y] = B[j*8+4+y][i*8+4+x];//填充B的左上的4*4
-        }
-    }
-
-    //printMatrixB(M,N,A,B);
-
-    //step3:4个miss(A:4miss)
-    for(x=0;x<4;x++){
-        for(y=4;y<8;y++){
-            B[i*8+x][j*8+y] = A[j*8+y][i*8+x];//填充B的右上的4*4
-        }
-    }
-
-    //printMatrixB(M,N,A,B);
-
-    //step4: 现在还剩最后B的右下角的4*4不正确了
-    //现在只剩11个miss能用了。
-
-    //step4_1: 记录A的右下角2*2的元素(0 miss)
-    t0 = A[i*8+6][j*8+6];
-    t1 = A[i*8+6][j*8+7];
-    t2 = A[i*8+7][j*8+6];
-    t3 = A[i*8+7][j*8+7];
-
-    //step4_2:填充B的左下角2*2的元素(2 miss)
-    B[i*8+6][j*8+4]=A[j*8+4][i*8+6];
-    B[i*8+6][j*8+5]=A[j*8+5][i*8+6];
-    B[i*8+7][j*8+4]=A[j*8+4][i*8+7];
-    B[i*8+7][j*8+5]=A[j*8+5][i*8+7];
-
-    //printMatrixB(M,N,A,B);
-
-    //step4_3:填充B的右下角的2*2的元素(0 miss)
-    B[i*8+6][j*8+6]=t0;
-    B[i*8+6][j*8+7]=t2;
-    B[i*8+7][j*8+6]=t1;
-    B[i*8+7][j*8+7]=t3;
-
-    //printMatrixB(M,N,A,B);
-
-    //step4_3:记录A的左上角2*2的元素(0 miss)
-    t0 = A[i*8+4][j*8+4];
-    t1 = A[i*8+4][j*8+5];
-    t2 = A[i*8+5][j*8+4];
-    t3 = A[i*8+5][j*8+5];
-
-    //step4_4:填充B的右上角的2*2元素(2+2=4miss)
-    B[i*8+4][j*8+6]=A[i*8+6][j*8+4];
-    B[i*8+4][j*8+7]=A[i*8+7][j*8+4];
-    B[i*8+5][j*8+6]=A[i*8+6][j*8+5];
-    B[i*8+5][j*8+7]=A[i*8+7][j*8+5];
-
-    //printMatrixB(M,N,A,B);
-
-    //step4_5: 填充B的左上角的2*2元素(0 miss)
-    B[i*8+4][j*8+4]=t0;
-    B[i*8+4][j*8+5]=t2;
-    B[i*8+5][j*8+4]=t1;
-    B[i*8+5][j*8+5]=t3;
-
     //printMatrixB(M,N,A,B);
     //printf("breakpoint\n");
 }

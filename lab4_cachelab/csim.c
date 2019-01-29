@@ -5,13 +5,6 @@
 #include <ctype.h>
 #include "cachelab.h"
 
-
-//void printArgs(int argc,char* argv[]);
-//void parseArgs(int argc,char* argv[],
-//               int *verbose, int *s, int *E, int*b, char traceFile[BUFSIZE]);
-//void printHelp();
-
-
 struct Block{
     //int setNum;//这个好像没用到
     long tag;
@@ -44,11 +37,9 @@ int main(int argc,char* argv[])
 
     parseArgs(argc, argv, &verbose, &s, &E, &b, traceFile);
 
-
     int S = (1<<(s));
 //    int B = (1<<(b));
 //    int t = 64-s-b;//tag的长度
-
 
     struct Block *blocks = NULL;
     blocks = (struct Block*)malloc(S*E*sizeof(struct Block));
@@ -78,7 +69,6 @@ int main(int argc,char* argv[])
     }
 
     free(blocks);
-
     fclose(fp);
 
     printSummary(hits, misses, evictions);
@@ -183,15 +173,6 @@ void processLine(char line[BUFSIZE], struct Block *blocks, int s, int E, int b, 
 
     return ;
 }
-
-//int caleFromE(int E){
-//    int e = 0;
-//    while (E>1){
-//        E>>=1;
-//    }
-//
-//    return e;
-//}
 
 void line2Addr(char line[BUFSIZE], unsigned long *address, int *dataLen){
 
