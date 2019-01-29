@@ -24,6 +24,41 @@ char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
     int i,j,m,n;
+    int t0,t1;
+
+    for(i = 0;i+8<73;i+=8) {
+
+        if(i+8<67){
+            t1=i+8;
+        }else{
+            t1=67;
+        };
+
+        for(j=0;j+8<65;j+=8){
+
+            //(i,j)   (i,j+8)
+            //(i+8,j) (i+8,j+8)
+
+            if(j+8<61){
+                t0=j+8;
+            }else{
+                t0=61;
+            };
+
+            for(m=i;m<t1;m++){
+                for(n=j;n<t0;n++){
+                    B[n][m]=A[m][n];
+                }
+            }
+        }
+    }
+
+}
+
+
+
+void dealWith64(int M, int N, int A[N][M], int B[M][N]){
+    int i,j,m,n;
     int t0,t1,t2,t3,t4,t5,t6,t7;
     //先处理不是对角线的情况。
     for(i = 0;i<8;i++){
@@ -86,12 +121,6 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                     B[j*8+n*2+1][i*8+m*2+1]=t7;
                 }
 
-                //printMatrixA(M,N,A,B);
-//                printMatrixB(M,N,A,B);
-//
-//                if(i!=0){
-//                    printf("breakpoint\n");
-//                }
 
             }else{
                 //非对角线的情况
@@ -155,12 +184,8 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             }
         }
     }
-    //printMatrixB(M,N,A,B);
-    //printf("breakpoint\n");
 
 }
-
-
 
 
 void dealWith32(int M, int N, int A[N][M], int B[M][N]){
