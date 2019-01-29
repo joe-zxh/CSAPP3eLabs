@@ -90,7 +90,6 @@ void dealWith61x67(int M, int N, int A[N][M], int B[M][N]){
 void dealWith64(int M, int N, int A[N][M], int B[M][N]){
     int i,j,m,n;
     int t0,t1,t2,t3,t4,t5,t6,t7;
-    //先处理不是对角线的情况。
     for(i = 0;i<8;i++){
         for (j=0;j<8;j++){
             if(i==j){
@@ -180,7 +179,7 @@ void dealWith64(int M, int N, int A[N][M], int B[M][N]){
                 t6=A[i*8+1][j*8+6];
                 t7=A[i*8+1][j*8+7];
 
-                //step4: A的左下到B的右上 4misses
+                //step2: A的左下到B的右上 4misses
                 for(m=i*8+4;m<i*8+8;m++){
                     for(n=j*8;n<j*8+4;n++){
                         B[n][m] = A[m][n];
@@ -195,7 +194,7 @@ void dealWith64(int M, int N, int A[N][M], int B[M][N]){
                     }
                 }
 
-                //step2: A的右上到B的左下 4misses
+                //step4: A的右上到B的左下 4misses
                 for(m=i*8+2;m<i*8+4;m++){
                     for(n=j*8+4;n<j*8+8;n++){
                         B[n][m] = A[m][n];
