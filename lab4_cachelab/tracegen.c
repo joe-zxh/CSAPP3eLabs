@@ -90,15 +90,15 @@ int main(int argc, char* argv[]){
             MARKER_START = 33;
             (*func_list[i].func_ptr)(M, N, A, B);
             MARKER_END = 34;
-            // if (!validate(i,M,N,A,B))
-            //     return i+1;
+            if (!validate(i,M,N,A,B))
+                return i+1;
         }
     } else {
         MARKER_START = 33;
         (*func_list[selectedFunc].func_ptr)(M, N, A, B);
         MARKER_END = 34;
-        // if (!validate(selectedFunc,M,N,A,B))
-        //     return selectedFunc+1;
+        if (!validate(selectedFunc,M,N,A,B))
+            return selectedFunc+1;
 
     }
     return 0;

@@ -12,7 +12,10 @@
 
 int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j);
-
+void normalCase(int M, int N, int A[N][M], int B[M][N]);
+void dealWith61x67(int M, int N, int A[N][M], int B[M][N]);
+void dealWith64(int M, int N, int A[N][M], int B[M][N]);
+void dealWith32(int M, int N, int A[N][M], int B[M][N]);
 /* 
  * transpose_submit - This is the solution transpose function that you
  *     will be graded on for Part B of the assignment. Do not change
@@ -23,6 +26,29 @@ void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+    if(M==32 && N==32){
+        dealWith32(M,N,A,B);
+    }else if(M==64 && M==64){
+        dealWith64(M,N,A,B);
+    }else if(M==61&&N==67){
+        dealWith61x67(M,N,A,B);
+    }else{
+        normalCase(M,N,A,B);
+    }
+}
+
+void normalCase(int M, int N, int A[N][M], int B[M][N]){
+    int i, j, tmp;
+
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < M; j++) {
+            tmp = A[i][j];
+            B[j][i] = tmp;
+        }
+    }
+}
+
+void dealWith61x67(int M, int N, int A[N][M], int B[M][N]){
     int i,j,m,n;
     int t0;
     //int t1,t2,t3,t4,t5,t6,t7;
@@ -31,9 +57,6 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
     for(i = 0;i+size<67;i+=size) {
 
         for(j=0;j+8<65;j+=8){
-
-            //(i,j)   (i,j+8)
-            //(i+8,j) (i+8,j+8)
 
             if(j+8<61){
                 t0=j+8;
@@ -63,10 +86,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             }
         }
     }
-
 }
-
-
 
 void dealWith64(int M, int N, int A[N][M], int B[M][N]){
     int i,j,m,n;
@@ -81,7 +101,6 @@ void dealWith64(int M, int N, int A[N][M], int B[M][N]){
                 //trans8by8(M,N,A,B,i,j);
 
                 B[i*8+3][j*8+1]=A[j*8+1][i*8+3];
-
 
                 for(m=0;m<4;m++){
                     //(i*8+m*2,j*8+n*2)    (i*8+m*2,j*8+n*2+1)
@@ -197,7 +216,6 @@ void dealWith64(int M, int N, int A[N][M], int B[M][N]){
     }
 
 }
-
 
 void dealWith32(int M, int N, int A[N][M], int B[M][N]){
     int i,j,m,n;
