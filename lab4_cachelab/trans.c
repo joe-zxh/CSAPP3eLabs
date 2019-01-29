@@ -24,25 +24,104 @@ char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
     int i,j,m,n;
-    int t0,t1,t2,t3;
+    int t0,t1,t2,t3,t4,t5,t6,t7;
     //先处理不是对角线的情况。
     for(i = 0;i<8;i++){
         for (j=0;j<8;j++){
-            if(0){
-                // 对角线的8*8的情况
-                trans8by8(M,N,A,B,i,j);
+            if(i==j){
                 //printMatrixB(M,N,A,B);
-                //printf("breakpoint\n");
-            }else{
-                //非对角线的情况
+
+                // 对角线的8*8的情况
+                //trans8by8(M,N,A,B,i,j);
+
                 //A:
                 //(i*8, j*8)    (i*8, j*8+8)
                 //
                 //(i*8+8, j*8)  (i*8+8, j*8+8)
 
+                //第一行。
+                t0=A[i*8][j*8];
+                t1=A[i*8][j*8+1];
+                t2=A[i*8+1][j*8];
+                t3=A[i*8+1][j*8+1];
+
+                t4=A[i*8][j*8+4];
+                t5=A[i*8][j*8+1+4];
+                t6=A[i*8+1][j*8+4];
+                t7=A[i*8+1][j*8+1+4];
+
+                B[i*8+2][j*8]=A[j*8][i*8+2];
+                B[i*8+2][j*8+1]=A[j*8+1][i*8+2];
+                B[i*8+3][j*8]=A[j*8][i*8+3];
+                B[i*8+3][j*8+1]=A[j*8+1][i*8+3];
+
+
+                for(m=0;m<4;m++){
+                    //(i*8+m*2,j*8+k*2)    (i*8+m*2,j*8+k*2+1)
+                    //(i*8+m*2+1, j*8+k*2) (i*8+m*2+1,j*8+k*2+1)
+
+                    //step0: 复制第1个不冲突的
+                    int k = (m+3+n)%4;//第k个框  等下可以用n来替代
+
+                    B[j*8+k*2][i*8+m*2]=A[i*8+m*2][j*8+k*2];
+                    B[j*8+k*2+1][i*8+m*2]=A[i*8+m*2][j*8+k*2+1];
+                    B[j*8+k*2][i*8+m*2+1]=A[i*8+m*2+1][j*8+k*2];
+                    B[j*8+k*2+1][i*8+m*2+1]=A[i*8+m*2+1][j*8+k*2+1];
+
+                    //step1: 复制第2个不冲突的
+                    k = (k+2)%4;
+                    B[j*8+k*2][i*8+m*2]=A[i*8+m*2][j*8+k*2];
+                    B[j*8+k*2+1][i*8+m*2]=A[i*8+m*2][j*8+k*2+1];
+                    B[j*8+k*2][i*8+m*2+1]=A[i*8+m*2+1][j*8+k*2];
+                    B[j*8+k*2+1][i*8+m*2+1]=A[i*8+m*2+1][j*8+k*2+1];
+
+
+                    //step2: 保存第1个冲突的到临时变量
+                    k = (k+1)%4;
+                    t0=A[i*8+m*2][j*8+k*2];
+                    t1=A[i*8+m*2][j*8+k*2+1];
+                    t2=A[i*8+m*2+1][j*8+k*2];
+                    t3=A[i*8+m*2+1][j*8+k*2+1];
+
+                    //step3:保存第2个冲突的到临时变量
+                    k = (k+2)%4;
+                    t4=A[i*8+m*2][j*8+k*2];
+                    t5=A[i*8+m*2][j*8+k*2+1];
+                    t6=A[i*8+m*2+1][j*8+k*2];
+                    t7=A[i*8+m*2+1][j*8+k*2+1];
+
+                    //step4:复制第1个冲突的
+                    k = (k+2)%4;
+                    B[j*8+k*2][i*8+m*2]=t0;
+                    B[j*8+k*2+1][i*8+m*2]=t1;
+                    B[j*8+k*2][i*8+m*2+1]=t2;
+                    B[j*8+k*2+1][i*8+m*2+1]=t3;
+
+                    //step4:复制第2个冲突的
+                    k = (k+2)%4;
+                    B[j*8+k*2][i*8+m*2]=t4;
+                    B[j*8+k*2+1][i*8+m*2]=t5;
+                    B[j*8+k*2][i*8+m*2+1]=t6;
+                    B[j*8+k*2+1][i*8+m*2+1]=t7;
+                }
+
+                //printMatrixA(M,N,A,B);
+//                printMatrixB(M,N,A,B);
+//
+//                if(i!=0){
+//                    printf("breakpoint\n");
+//                }
+
+            }else{
+                //非对角线的情况
+                //A:
+                //(i*8, j*8)    (i*8, j*8+7)
+                //
+                //(i*8+7, j*8)  (i*8+7, j*8+7)
+
                 //B:
-                //(j*8, i*8)    (j*8, i*8+8)
-                //(j*8+8, i*8) (j*8+8, i*8+8)
+                //(j*8, i*8)    (j*8, i*8+7)
+                //(j*8+7, i*8) (j*8+7, i*8+7)
 
 
                 //step1: A的左上到B的左上 8misses
@@ -56,6 +135,11 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 t1=A[i*8][j*8+5];
                 t2=A[i*8][j*8+6];
                 t3=A[i*8][j*8+7];
+
+                t4=A[i*8+1][j*8+4];
+                t5=A[i*8+1][j*8+5];
+                t6=A[i*8+1][j*8+6];
+                t7=A[i*8+1][j*8+7];
 
                 //step4: A的左下到B的右上 4misses
                 for(m=i*8+4;m<i*8+8;m++){
@@ -73,7 +157,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 }
 
                 //step2: A的右上到B的左下 4misses
-                for(m=i*8;m<i*8+4;m++){
+                for(m=i*8+2;m<i*8+4;m++){
                     for(n=j*8+4;n<j*8+8;n++){
                         B[n][m] = A[m][n];
                     }
@@ -83,10 +167,16 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 B[j*8+6][i*8]=t2;
                 B[j*8+7][i*8]=t3;
 
+                B[j*8+4][i*8+1]=t4;
+                B[j*8+5][i*8+1]=t5;
+                B[j*8+6][i*8+1]=t6;
+                B[j*8+7][i*8+1]=t7;
             }
         }
     }
     //printMatrixB(M,N,A,B);
+    //printf("breakpoint\n");
+
 }
 
 
@@ -209,19 +299,19 @@ void trans8by8(int M, int N, int A[N][M], int B[M][N], int i, int j){
 /* 
  * trans - A simple baseline transpose function, not optimized for the cache.
  */
-char trans_desc[] = "Simple row-wise scan transpose";
-void trans(int M, int N, int A[N][M], int B[M][N])
-{
-//    int i, j, tmp;
+//char trans_desc[] = "Simple row-wise scan transpose";
+//void trans(int M, int N, int A[N][M], int B[M][N])
+//{
+////    int i, j, tmp;
+////
+////    for (i = 0; i < N; i++) {
+////        for (j = 0; j < M; j++) {
+////            tmp = A[i][j];
+////            B[j][i] = tmp;
+////        }
+////    }
 //
-//    for (i = 0; i < N; i++) {
-//        for (j = 0; j < M; j++) {
-//            tmp = A[i][j];
-//            B[j][i] = tmp;
-//        }
-//    }
-
-}
+//}
 
 /*
  * registerFunctions - This function registers your transpose
@@ -236,7 +326,7 @@ void registerFunctions()
     registerTransFunction(transpose_submit, transpose_submit_desc); 
 
     /* Register any additional transpose functions */
-    registerTransFunction(trans, trans_desc); 
+    //registerTransFunction(trans, trans_desc);
 
 }
 
