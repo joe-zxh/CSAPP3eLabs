@@ -69,6 +69,70 @@ cx<=27才行。
 #### 处在对角线上的chunk
 
 
+通过以下步骤来进行转置：  
+step1: A的右上到 B的左下，A的左上到B的右下。(A:4miss  B:4miss)  
+step2：B的右下到B的左上 (B:4miss)  
+step3：A的左下到B的右上  在局部变量里面记录A的右下的 前2行的值  (A:4miss)  
+step4: A的右下的 后2行的值 存到B的右下的前2行中(B:2miss)  
+step5: A的右下的 4x4的内部操作 并且使用上前面的局部变量值(B:2miss)  
+
+<img src="mdpics/32x32_diag8x8Steps.png">  
+
+粗略估计 一共192+4×20=272个miss。最后结果为275个miss，和估计结果差不多。
+
+
+## 64x64的矩阵
+
+和32x32类似，第一步，我们先观察64x64矩阵的元素的内存分布，画出 每个元素对应的set：
+<img src="mdpics/64x64addr.png"> 
+
+
+不难发现，尽管 关于对角线 对称的8x8的chunk使用的set还是互斥的，但 chunk内部的一半的元素却使用了 相同的set。
+
+这是64x64的其中一个难点。
+
+### 处理非对角线上的chunk对
+
+同样地，64x64也使用了大小为8x8的chunk。
+
+如图8x8的chunk A，转置后会放到chunk B中：  
+<img src="mdpics/64x64_8x8nonDiag.png" height="380" width="380"> 
+
+不难发现如下规律：  
+A左上-->B左上  
+A右上-->B左下  
+A左下-->B右上  
+A右下-->B右下  
+
+我们可以通过如下步骤进行转置：
+1. A的左上到B的左上,同时变量记录A的右上的前2行的值(8miss)
+2. A的左下到B的右上(4miss)
+3. A的右下到B的右下(4miss)
+4. A的右上下面2行 以及局部变量 到B的左下(2miss)
+一共18miss
+
+<img src="mdpics/64x64_8x8nonDiagSteps.png"> 
+
+
+### 处理对角线上的chunk
+
+处理64x64的对角线上的chunk是lab4最难的地方。
+
+先计算我们还剩多少个miss可用。  
+20×(7×8)+8×cx<=1300,得出  
+cx=36misses  
+每个对角线上的chunk的处理，最多只能用36个miss
+
+先把8x8的chunk拆成2x2的chunk。
+
+处理对角线的chunk的步骤如图：
+
+
+
+
+
+每个四方形是2x2的chunk
+
 
 
 
