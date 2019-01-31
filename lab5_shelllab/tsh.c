@@ -49,6 +49,8 @@ struct job_t {              /* The job struct */
     char cmdline[MAXLINE];  /* command line */
 };
 struct job_t jobs[MAXJOBS]; /* The job list */
+
+volatile sig_atomic_t pid; //joe
 /* End global variables */
 
 
@@ -165,6 +167,45 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    char *argv[MAXARGS];
+    int bg = parseline(cmdline,argv);
+
+    sigset_t mask, prev;
+
+    sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
+
+    if(!builtin_cmd(argv)){//不是built-in的功能，需要 调用外部的程序
+
+        sigprocmask(SIG_BLOCK, &mask, &prev);//一开始 先block SIGCHLD的信号。
+        // prev返回的是 执行这个sigprocmask函数之前 的block的信号值。
+
+        if((pid=Fork())==0){//当前是child
+
+            //这里可能需要unblock一下。
+            setpgid(0,0); //确保只有一个进程(即tinyshell)在foreground process group中。
+
+            if(execve(argv[0], argv, environ)<0){
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+        }
+
+        //child在这前面已经结束了，后面的代码都是parent的
+        if(!bg){
+            int status;
+            if(waitpid(pid, &status, 0)<0){
+                unix_error("waitfg: waitpid error");
+            }
+        }else{//background的程序。要通过信号来 回收。
+            pid = 0;
+            while(!pid){
+                sigsuspend(&prev);
+            }
+
+            sigprocmask(SIG_SETMASK, &prev, NULL);
+        }
+    }
+
     return;
 }
 
@@ -231,6 +272,16 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+    if(strcmp(argv[0],"quit")==0){
+        exit(0);
+    }else if(strcmp(argv[0],"jobs")==0){
+        listjobs(jobs);
+        return 1;
+    }else if((strcmp(argv[0],"fg")==0)||(strcmp(argv[0],"bg")==0)){
+        do_bgfg(argv);
+        return 1;
+    }
+
     return 0;     /* not a builtin command */
 }
 
@@ -263,6 +314,9 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+    int olderrno = errno;
+    pid = waitpid(-1, NULL, 0);
+    errno = olderrno;
     return;
 }
 
@@ -448,6 +502,13 @@ void listjobs(struct job_t *jobs)
 /***********************
  * Other helper routines
  ***********************/
+
+pid_t Fork(void){
+    pid_t pid;
+    if((pid=fork())<0)
+        unix_error("Fork error: pid<0");
+    return pid;
+}
 
 /*
  * usage - print a help message

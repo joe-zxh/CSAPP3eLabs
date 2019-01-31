@@ -1,5 +1,8 @@
 #
-# trace03.txt - Run a foreground job.
+# trace03.txt - Run a foreground job. 
+# 先使用外部的echo程序，在命令行充输出字符串“tsh> quit"
+# 这一步是 为了告诉你 当前执行的指令是啥
+# 然后下一行 是对shell进行 命令的输入
 #
 /bin/echo tsh> quit
 quit
