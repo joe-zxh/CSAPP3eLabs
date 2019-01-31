@@ -57,6 +57,7 @@ volatile sig_atomic_t pid; //joe
 /* Function prototypes */
 
 /* Here are the functions that you will implement */
+pid_t Fork(void);
 void eval(char *cmdline);
 int builtin_cmd(char **argv);
 void do_bgfg(char **argv);
@@ -181,7 +182,7 @@ void eval(char *cmdline)
 
         if((pid=Fork())==0){//当前是child
 
-            //这里可能需要unblock一下。
+            sigprocmask(SIG_SETMASK, &prev, NULL);
             setpgid(0,0); //确保只有一个进程(即tinyshell)在foreground process group中。
 
             if(execve(argv[0], argv, environ)<0){
@@ -192,18 +193,18 @@ void eval(char *cmdline)
 
         //child在这前面已经结束了，后面的代码都是parent的
         if(!bg){
-            int status;
-            if(waitpid(pid, &status, 0)<0){
-                unix_error("waitfg: waitpid error");
-            }
-        }else{//background的程序。要通过信号来 回收。
+            addjob(jobs, pid, FG, cmdline);
             pid = 0;
             while(!pid){
                 sigsuspend(&prev);
             }
 
-            sigprocmask(SIG_SETMASK, &prev, NULL);
+
+        }else{//background的程序。要通过信号来 回收。
+            addjob(jobs, pid, BG, cmdline);
         }
+
+        sigprocmask(SIG_SETMASK, &prev, NULL);
     }
 
     return;
@@ -316,6 +317,7 @@ void sigchld_handler(int sig)
 {
     int olderrno = errno;
     pid = waitpid(-1, NULL, 0);
+    deletejob(jobs, pid);
     errno = olderrno;
     return;
 }
@@ -391,6 +393,9 @@ int addjob(struct job_t *jobs, pid_t pid, int state, char *cmdline)
 	    if (nextjid > MAXJOBS)
 		nextjid = 1;
 	    strcpy(jobs[i].cmdline, cmdline);
+        if(state==BG){
+            printf("[%d] %d %s", jobs[i].jid, jobs[i].pid, jobs[i].cmdline);//为了和reference相同
+        }
   	    if(verbose){
 	        printf("Added job [%d] %d %s\n", jobs[i].jid, jobs[i].pid, jobs[i].cmdline);
             }
