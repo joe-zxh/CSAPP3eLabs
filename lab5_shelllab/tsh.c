@@ -51,6 +51,7 @@ struct job_t {              /* The job struct */
 struct job_t jobs[MAXJOBS]; /* The job list */
 
 volatile sig_atomic_t pid; //joe
+sigset_t prev;
 /* End global variables */
 
 
@@ -171,7 +172,7 @@ void eval(char *cmdline)
     char *argv[MAXARGS];
     int bg = parseline(cmdline,argv);
 
-    sigset_t mask, prev;
+    sigset_t mask;
 
     sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
 
@@ -202,7 +203,7 @@ void eval(char *cmdline)
         }else{//background的程序。要通过信号来 回收。
             addjob(jobs, pid, BG, cmdline);
             sigprocmask(SIG_SETMASK, &prev, NULL);
-            printf("[%d] %d %s", getjobpid(jobs, pid)->jid, pid, cmdline);//为了和reference相同
+            printf("[%d] (%d) %s", getjobpid(jobs, pid)->jid, pid, cmdline);//为了和reference相同
         }
 
         sigprocmask(SIG_SETMASK, &prev, NULL);
@@ -292,6 +293,97 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
+    if(strcmp(argv[0],"bg")==0){
+
+        int id;
+        struct job_t *tempjob;
+
+        if(argv[1][0]=='%'){
+            id = atoi((argv[1])+1);
+            tempjob = getjobjid(jobs, id);
+        }else{
+            id = atoi(argv[1]);
+            tempjob = getjobpid(jobs, id);
+        }
+
+        if(tempjob!=NULL){
+
+            int olderrno = errno;
+            tempjob->state=BG;
+
+            if(tempjob){
+                printf("[%d] (%d) %s", tempjob->jid, tempjob->pid, tempjob->cmdline);
+                killpg(-tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
+                //为什么这里是-的就行了...
+            }
+            errno = olderrno;
+        }else{
+            fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+        }
+    }else if(strcmp(argv[0],"fg")==0){
+        int id;
+        struct job_t *tempjob;
+
+        if(argv[1][0]=='%'){
+            id = atoi((argv[1])+1);
+            tempjob = getjobjid(jobs, id);
+        }else{
+            id = atoi(argv[1]);
+            tempjob = getjobpid(jobs, id);
+        }
+
+        if(tempjob!=NULL){
+            int olderrno = errno;
+
+            if(tempjob){
+                if(tempjob->state==ST){
+
+                    sigset_t mask;
+                    sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
+
+                    sigprocmask(SIG_BLOCK, &mask, &prev);
+
+                    tempjob->state=FG;
+                    killpg(tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
+                    //为什么这里是-的就行了...
+
+                    pid = 0;
+                    while(!pid){
+                        sigsuspend(&prev);
+                    }
+                    sigprocmask(SIG_SETMASK, &prev, NULL);
+
+                }else if(tempjob->state==BG){
+
+                    sigset_t mask;
+                    sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
+
+                    sigprocmask(SIG_BLOCK, &mask, &prev);
+
+                    tempjob = getjobjid(jobs, id);
+
+                    if(tempjob){ //还没跑完
+                        tempjob->state=FG;
+                        pid = 0;
+                        while(!pid){
+                            sigsuspend(&prev);
+                        }
+                    }
+                    sigprocmask(SIG_SETMASK, &prev, NULL);
+                }
+            }
+
+            errno = olderrno;
+        }else{
+            fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+        }
+
+
+    }else{
+        printf("do_bgfg: input error!\n");
+    }
+
+
     return;
 }
 
@@ -300,6 +392,10 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    pid = 0;
+    while(!pid){
+        sigsuspend(&prev);
+    }
     return;
 }
 
@@ -366,13 +462,11 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
-    printf("Sup? in stop\n");
     int olderrno = errno;
 
     pid_t pgid = fgpid(jobs);
 
     if(pgid){
-        printf("Sup? in stop\n");
         killpg(pgid, SIGTSTP);
     }
 
@@ -605,6 +699,4 @@ void sigquit_handler(int sig)
     printf("Terminating after receipt of SIGQUIT signal\n");
     exit(1);
 }
-
-
 
