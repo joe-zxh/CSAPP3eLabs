@@ -52,6 +52,7 @@ struct job_t jobs[MAXJOBS]; /* The job list */
 
 volatile sig_atomic_t pid; //joe
 sigset_t prev;
+int argvLen;
 /* End global variables */
 
 
@@ -266,6 +267,7 @@ int parseline(const char *cmdline, char **argv)
     if ((bg = (*argv[argc-1] == '&')) != 0) {
         argv[--argc] = NULL;
     }
+    argvLen = argc;
     return bg;
 }
 
@@ -293,6 +295,11 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
+    if(argvLen<2){
+        printf("%s command requires PID or %%jobid argument\n",argv[0]);
+        return;
+    }
+
     if(strcmp(argv[0],"bg")==0){
 
         int id;
@@ -300,10 +307,27 @@ void do_bgfg(char **argv)
 
         if(argv[1][0]=='%'){
             id = atoi((argv[1])+1);
-            tempjob = getjobjid(jobs, id);
+            if(id){
+                tempjob = getjobjid(jobs, id);
+                if(!tempjob){
+                    fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+                }
+            }else{
+                printf("bg: argument must be a PID or %%jobid\n");
+                return;
+            }
+
         }else{
             id = atoi(argv[1]);
-            tempjob = getjobpid(jobs, id);
+            if(id){
+                tempjob = getjobpid(jobs, id);
+                if(!tempjob){
+                    printf("(%s): No such process\n", argv[1]);
+                }
+            }else{
+                printf("bg: argument must be a PID or %%jobid\n");
+                return;
+            }
         }
 
         if(tempjob!=NULL){
@@ -318,7 +342,7 @@ void do_bgfg(char **argv)
             }
             errno = olderrno;
         }else{
-            fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+            //fprintf(stderr, "%%%s: No such process\n", argv[1] + 1);
         }
     }else if(strcmp(argv[0],"fg")==0){
         int id;
@@ -326,10 +350,27 @@ void do_bgfg(char **argv)
 
         if(argv[1][0]=='%'){
             id = atoi((argv[1])+1);
-            tempjob = getjobjid(jobs, id);
+            if(id){
+                tempjob = getjobjid(jobs, id);
+                if(!tempjob){
+                    fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+                }
+            }else{
+                printf("fg: argument must be a PID or %%jobid\n");
+                return;
+            }
+
         }else{
             id = atoi(argv[1]);
-            tempjob = getjobpid(jobs, id);
+            if(id){
+                tempjob = getjobpid(jobs, id);
+                if(!tempjob){
+                    printf("(%s): No such process\n", argv[1]);
+                }
+            }else{
+                printf("fg: argument must be a PID or %%jobid\n");
+                return;
+            }
         }
 
         if(tempjob!=NULL){
@@ -374,14 +415,13 @@ void do_bgfg(char **argv)
 
             errno = olderrno;
         }else{
-            fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+            //fprintf(stderr, "%%%s: No such process\n", argv[1] + 1);
         }
 
 
     }else{
         printf("do_bgfg: input error!\n");
     }
-
 
     return;
 }
