@@ -203,7 +203,11 @@ void eval(char *cmdline)
         }else{//background的程序。要通过信号来 回收。
             addjob(jobs, pid, BG, cmdline);
             sigprocmask(SIG_SETMASK, &prev, NULL);
+<<<<<<< HEAD
             printf("[%d] (%d) %s", getjobpid(jobs, pid)->jid, pid, cmdline);//为了和reference相同
+=======
+            printf("[%d] %d %s", getjobpid(jobs, pid)->jid, pid, cmdline);//为了和reference相同
+>>>>>>> master
         }
 
         sigprocmask(SIG_SETMASK, &prev, NULL);
@@ -462,11 +466,19 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
+<<<<<<< HEAD
+=======
+    printf("Sup? in stop\n");
+>>>>>>> master
     int olderrno = errno;
 
     pid_t pgid = fgpid(jobs);
 
     if(pgid){
+<<<<<<< HEAD
+=======
+        printf("Sup? in stop\n");
+>>>>>>> master
         killpg(pgid, SIGTSTP);
     }
 
