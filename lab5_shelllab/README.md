@@ -7,3 +7,5 @@
     while(!pid){//等这个foreground job跑完  
         sigsuspend(&prev);//一个原子操作，具体看书上P545  
     }
+
+查看signal相关的各种函数的api：http://pubs.opengroup.org/onlinepubs/7908799/xsh/signal.h.html
