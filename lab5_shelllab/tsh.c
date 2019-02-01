@@ -203,11 +203,7 @@ void eval(char *cmdline)
         }else{//background的程序。要通过信号来 回收。
             addjob(jobs, pid, BG, cmdline);
             sigprocmask(SIG_SETMASK, &prev, NULL);
-<<<<<<< HEAD
             printf("[%d] (%d) %s", getjobpid(jobs, pid)->jid, pid, cmdline);//为了和reference相同
-=======
-            printf("[%d] %d %s", getjobpid(jobs, pid)->jid, pid, cmdline);//为了和reference相同
->>>>>>> master
         }
 
         sigprocmask(SIG_SETMASK, &prev, NULL);
@@ -348,8 +344,7 @@ void do_bgfg(char **argv)
                     sigprocmask(SIG_BLOCK, &mask, &prev);
 
                     tempjob->state=FG;
-                    killpg(tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
-                    //为什么这里是-的就行了...
+                    killpg(-tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
 
                     pid = 0;
                     while(!pid){
@@ -466,19 +461,11 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig)
 {
-<<<<<<< HEAD
-=======
-    printf("Sup? in stop\n");
->>>>>>> master
     int olderrno = errno;
 
     pid_t pgid = fgpid(jobs);
 
     if(pgid){
-<<<<<<< HEAD
-=======
-        printf("Sup? in stop\n");
->>>>>>> master
         killpg(pgid, SIGTSTP);
     }
 
