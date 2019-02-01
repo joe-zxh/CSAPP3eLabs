@@ -344,7 +344,7 @@ void do_bgfg(char **argv)
                     sigprocmask(SIG_BLOCK, &mask, &prev);
 
                     tempjob->state=FG;
-                    killpg(-tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
+                    killpg(tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
 
                     pid = 0;
                     while(!pid){
