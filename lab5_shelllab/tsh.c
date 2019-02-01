@@ -188,7 +188,7 @@ void eval(char *cmdline)
             setpgid(0,0); //确保只有一个进程(即tinyshell)在foreground process group中。
 
             if(execve(argv[0], argv, environ)<0){
-                printf("%s: Command not found.\n", argv[0]);
+                printf("%s: Command not found\n", argv[0]);
                 exit(0);
             }
         }
@@ -299,61 +299,56 @@ void do_bgfg(char **argv)
         printf("%s command requires PID or %%jobid argument\n",argv[0]);
         return;
     }
+    int id;//pid或jid
+    struct job_t *tempjob;
+    int olderrno;
 
     if(strcmp(argv[0],"bg")==0){
-
-        int id;
-        struct job_t *tempjob;
-
-        if(argv[1][0]=='%'){
+        if(argv[1][0]=='%'){ //获取job，以及错误检查
             id = atoi((argv[1])+1);
             if(id){
                 tempjob = getjobjid(jobs, id);
                 if(!tempjob){
                     fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+                    return;
                 }
             }else{
                 printf("bg: argument must be a PID or %%jobid\n");
                 return;
             }
-
         }else{
             id = atoi(argv[1]);
             if(id){
                 tempjob = getjobpid(jobs, id);
                 if(!tempjob){
                     printf("(%s): No such process\n", argv[1]);
+                    return;
                 }
             }else{
                 printf("bg: argument must be a PID or %%jobid\n");
                 return;
             }
         }
+        olderrno = errno;
+        tempjob->state=BG; //bg命令：change a stopped background job to a running background job
 
-        if(tempjob!=NULL){
-
-            int olderrno = errno;
-            tempjob->state=BG;
-
-            if(tempjob){
-                printf("[%d] (%d) %s", tempjob->jid, tempjob->pid, tempjob->cmdline);
-                killpg(-tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
-                //为什么这里是-的就行了...
-            }
-            errno = olderrno;
-        }else{
-            //fprintf(stderr, "%%%s: No such process\n", argv[1] + 1);
+        if(tempjob){
+            printf("[%d] (%d) %s", tempjob->jid, tempjob->pid, tempjob->cmdline);
+            killpg(-tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
+            //为什么这里是-的就行了...
         }
-    }else if(strcmp(argv[0],"fg")==0){
-        int id;
-        struct job_t *tempjob;
+        errno = olderrno;
+        return;
+    }
 
-        if(argv[1][0]=='%'){
+    if(strcmp(argv[0],"fg")==0){
+        if(argv[1][0]=='%'){ //获取job，以及错误检查
             id = atoi((argv[1])+1);
             if(id){
                 tempjob = getjobjid(jobs, id);
                 if(!tempjob){
                     fprintf(stderr, "%%%s: No such job\n", argv[1] + 1);
+                    return;
                 }
             }else{
                 printf("fg: argument must be a PID or %%jobid\n");
@@ -366,6 +361,7 @@ void do_bgfg(char **argv)
                 tempjob = getjobpid(jobs, id);
                 if(!tempjob){
                     printf("(%s): No such process\n", argv[1]);
+                    return;
                 }
             }else{
                 printf("fg: argument must be a PID or %%jobid\n");
@@ -373,54 +369,42 @@ void do_bgfg(char **argv)
             }
         }
 
-        if(tempjob!=NULL){
-            int olderrno = errno;
+        olderrno = errno;
 
-            if(tempjob){
-                if(tempjob->state==ST){
+        if(tempjob->state==ST){
 
-                    sigset_t mask;
-                    sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
+            sigset_t mask;
+            sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
+            sigprocmask(SIG_BLOCK, &mask, &prev);
 
-                    sigprocmask(SIG_BLOCK, &mask, &prev);
+            tempjob->state=FG;
+            killpg(tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
 
-                    tempjob->state=FG;
-                    killpg(tempjob->pid, SIGCONT); //hand-out里面说是-pgid，但会有问题...
+            pid = 0;
+            while(!pid){//等这个foreground job跑完
+                sigsuspend(&prev);
+            }
+            sigprocmask(SIG_SETMASK, &prev, NULL);
 
-                    pid = 0;
-                    while(!pid){
-                        sigsuspend(&prev);
-                    }
-                    sigprocmask(SIG_SETMASK, &prev, NULL);
+        }else if(tempjob->state==BG){
 
-                }else if(tempjob->state==BG){
+            sigset_t mask;
+            sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
+            sigprocmask(SIG_BLOCK, &mask, &prev);//先block一下child信号，以免 child跑完 后出现的死锁
 
-                    sigset_t mask;
-                    sigaddset(&mask, SIGCHLD);//mask放的是SIGCHLD的信号
+            tempjob = getjobjid(jobs, id);
 
-                    sigprocmask(SIG_BLOCK, &mask, &prev);
-
-                    tempjob = getjobjid(jobs, id);
-
-                    if(tempjob){ //还没跑完
-                        tempjob->state=FG;
-                        pid = 0;
-                        while(!pid){
-                            sigsuspend(&prev);
-                        }
-                    }
-                    sigprocmask(SIG_SETMASK, &prev, NULL);
+            if(tempjob){ //还没跑完。如果跑完了，就不管了，不用放在前台了
+                tempjob->state=FG;
+                pid = 0;
+                while(!pid){//等这个foreground job跑完
+                    sigsuspend(&prev);
                 }
             }
-
-            errno = olderrno;
-        }else{
-            //fprintf(stderr, "%%%s: No such process\n", argv[1] + 1);
+            sigprocmask(SIG_SETMASK, &prev, NULL);
         }
 
-
-    }else{
-        printf("do_bgfg: input error!\n");
+        errno = olderrno;
     }
 
     return;
