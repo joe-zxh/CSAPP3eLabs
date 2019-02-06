@@ -1,0 +1,1 @@
+/usr/bin/cc -g   CMakeFiles/lab6malloc.dir/mdriver.c.o CMakeFiles/lab6malloc.dir/memlib.c.o CMakeFiles/lab6malloc.dir/mm.c.o CMakeFiles/lab6malloc.dir/fsecs.c.o CMakeFiles/lab6malloc.dir/ftimer.c.o CMakeFiles/lab6malloc.dir/fcyc.c.o CMakeFiles/lab6malloc.dir/clock.c.o  -o lab6malloc 
