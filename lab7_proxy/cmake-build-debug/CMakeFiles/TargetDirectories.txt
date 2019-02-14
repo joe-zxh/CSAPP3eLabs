@@ -1,0 +1,3 @@
+/home/joe/ws/cpp/lab7_proxy/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/joe/ws/cpp/lab7_proxy/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/joe/ws/cpp/lab7_proxy/cmake-build-debug/CMakeFiles/lab7_proxy.dir

@@ -1,0 +1,1 @@
+/usr/bin/cc -g   CMakeFiles/lab7_proxy.dir/proxy.c.o CMakeFiles/lab7_proxy.dir/csapp.c.o  -o lab7_proxy -lpthread 

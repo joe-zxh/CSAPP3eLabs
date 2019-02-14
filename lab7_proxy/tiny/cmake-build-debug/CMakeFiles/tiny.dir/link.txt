@@ -1,0 +1,1 @@
+/usr/bin/cc -g   CMakeFiles/tiny.dir/tiny.c.o CMakeFiles/tiny.dir/csapp.c.o  -o tiny -lpthread 

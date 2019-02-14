@@ -1,0 +1,3 @@
+/home/joe/ws/cpp/lab7_proxy/tiny/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/joe/ws/cpp/lab7_proxy/tiny/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/joe/ws/cpp/lab7_proxy/tiny/cmake-build-debug/CMakeFiles/tiny.dir
