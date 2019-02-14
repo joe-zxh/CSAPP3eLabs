@@ -1,5 +1,7 @@
 CSAPP3eLabs
 
-网址：http://csapp.cs.cmu.edu/3e/labs.html
+lab网址：http://csapp.cs.cmu.edu/3e/labs.html
 
-还剩lab7 Proxy labs 等过完春节再做了...
+视频地址：https://www.youtube.com/playlist?list=PLmBgoRqEQCWy58EIwLSWwMPfkwLOLRM5R
+
+课件网址(2015 fall)：http://www.cs.cmu.edu/afs/cs/academic/class/15213-f15/www/schedule.html
